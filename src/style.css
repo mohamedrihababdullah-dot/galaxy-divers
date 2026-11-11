@@ -9,11 +9,57 @@
 }
 * { box-sizing: border-box; }
 body { margin: 0; }
-header { border-bottom: 1px solid var(--border); padding: 18px max(22px, calc((100% - 1160px) / 2)); }
-.brand { display: inline-flex; gap: 9px; align-items: center; font-weight: 700; white-space: nowrap; }
-.orbit { color: var(--accent); font-size: 21px; }
-main { width: min(1160px, calc(100% - 44px)); margin: 48px auto; }
-h1 { font-size: clamp(36px, 6vw, 60px); letter-spacing: -.055em; margin: 0; line-height: 1.05; }
+html { scroll-behavior: smooth; }
+.site-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border-bottom: 1px solid #274262;
+  background: #050a14;
+  padding: 16px max(22px, calc((100% - 1160px) / 2));
+}
+.brand { display: inline-flex; gap: 9px; align-items: center; color: #edf3fa; font-weight: 800; white-space: nowrap; text-decoration: none; }
+.orbit { color: #8ddcff; font-size: 24px; text-shadow: 0 0 16px #149aff; }
+.header-link { color: #bfe5ff; text-decoration: none; font-size: 13px; }
+.header-link:hover { text-decoration: underline; }
+.hero {
+  position: relative;
+  display: grid;
+  align-items: end;
+  isolation: isolate;
+  overflow: hidden;
+  min-height: clamp(560px, 76svh, 820px);
+  background: #050a15 url('/hero/solar-system.png') center 43% / cover no-repeat;
+}
+.hero::after {
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  content: '';
+  background: linear-gradient(0deg, #090f19 0%, transparent 27%),
+    radial-gradient(ellipse at 20% 77%, #020713 0%, #020713d9 18%, transparent 64%);
+}
+.hero-content { width: min(1160px, calc(100% - 44px)); margin-inline: auto; padding-block: 70px; }
+.hero-kicker { margin: 0 0 14px; color: #9ddaff; font-size: 13px; font-weight: 800; letter-spacing: .19em; text-transform: uppercase; }
+.hero h1 { margin: 0; font-size: clamp(48px, 7.5vw, 108px); line-height: .96; letter-spacing: -.065em; text-shadow: 0 4px 32px #1778cb70; }
+.hero-content > p:not(.hero-kicker) { max-width: 32ch; margin: 21px 0 24px; color: #c0d4e8; font-size: clamp(15px, 2vw, 18px); line-height: 1.55; }
+.hero-action { display: inline-flex; gap: 10px; align-items: center; padding: 12px 17px; border: 1px solid #73cbff; border-radius: 8px; background: #0b2540; color: #edf8ff; text-decoration: none; font-weight: 700; box-shadow: 0 0 22px #187acc4d; }
+.hero-action:hover { background: #17466d; }
+.hero-action span { font-size: 20px; line-height: 1; color: #8bdbff; }
+.hero-art { position: absolute; z-index: -1; width: min(47vw, 690px); right: max(2%, calc((100vw - 1370px) / 2)); bottom: 6%; }
+.diver { display: block; position: relative; width: 100%; height: auto; filter: drop-shadow(0 0 23px #258fff66); animation: space-dive 7s ease-in-out infinite; }
+.dive-trail { position: absolute; inset: 62% -19% 0 30%; transform: rotate(24deg); background: radial-gradient(ellipse at center, #309dff6b 0%, #0b59aa46 28%, transparent 70%); animation: trail-pulse 7s ease-in-out infinite; }
+@keyframes space-dive {
+  0%, 100% { transform: translate3d(0, 0, 0) rotate(-2deg); }
+  50% { transform: translate3d(-22px, -24px, 0) rotate(3deg); }
+}
+@keyframes trail-pulse {
+  0%, 100% { opacity: .55; }
+  50% { opacity: 1; }
+}
+.explorer { width: min(1160px, calc(100% - 44px)); margin: 38px auto 60px; scroll-margin-top: 24px; }
+#explorer-title { font-size: clamp(32px, 5vw, 52px); letter-spacing: -.045em; }
 h2 { font-size: 17px; margin: 0; }
 .intro { color: var(--muted); margin: 14px 0 30px; }
 .layout { display: grid; grid-template-columns: 275px minmax(0, 1fr); gap: 18px; align-items: start; }
@@ -45,7 +91,14 @@ small { color: var(--muted); }
 .details { min-height: 45px; border-top: 1px solid var(--border); flex-wrap: wrap; }
 a { color: var(--accent); }
 @media (max-width: 700px) {
-  main { margin-top: 28px; }
+  .hero { min-height: 650px; background-position: 48% center; }
+  .hero-art { width: min(68vw, 380px); top: 13%; bottom: auto; right: 6%; }
+  .hero::after { background: linear-gradient(0deg, #090f19 1%, #050a15ef 24%, #050a15aa 42%, transparent 66%); }
+  .hero-content { padding-bottom: 35px; }
   .layout { grid-template-columns: 1fr; }
   .viewer { grid-row: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .diver, .dive-trail { animation: none; }
 }

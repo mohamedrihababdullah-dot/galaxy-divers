@@ -106,9 +106,25 @@ function App() {
   }
 
   return <>
-    <header><span className="brand"><span className="orbit" aria-hidden="true">✦</span> Galaxy Divers</span></header>
-    <main>
-      <h1>SPHEREx Explorer</h1>
+    <header className="site-header">
+      <a className="brand" href="#home"><span className="orbit" aria-hidden="true">✦</span> Galaxy Divers</a>
+      <a className="header-link" href="#explorer">SPHEREx Explorer <span aria-hidden="true">↗</span></a>
+    </header>
+    <main id="home">
+      <section className="hero" aria-labelledby="hero-title">
+        <div className="hero-art" aria-hidden="true">
+          <div className="dive-trail" />
+          <img className="diver" src="/hero/diver.png" alt="" fetchPriority="high" />
+        </div>
+        <div className="hero-content">
+          <p className="hero-kicker">Planet X &amp; SPHEREx</p>
+          <h1 id="hero-title">Dive into the<br />unseen sky.</h1>
+          <p>Explore the infrared sky and see how it changes over time with Galaxy Divers.</p>
+          <a className="hero-action" href="#explorer"><span aria-hidden="true">▷</span> Explore the sky</a>
+        </div>
+      </section>
+      <section id="explorer" className="explorer" aria-labelledby="explorer-title">
+      <h2 id="explorer-title">SPHEREx Explorer</h2>
       <p className="intro">Compare the same patch of infrared sky across observations.</p>
       <div className="layout">
         <aside className="panel">
@@ -164,6 +180,7 @@ function App() {
           </div>
         </section>
       </div>
+      </section>
     </main>
   </>
 }
