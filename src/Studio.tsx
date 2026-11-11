@@ -29,7 +29,7 @@ export function ObservationStudio({ url, target, coords, zoom, onZoom }: {
     fetch(url, { signal: controller.signal }).then(response => {
       if (!response.ok) throw new Error('Cube unavailable')
       return response.json()
-    }).then(validateCube).then(setCube).catch(() => {
+    }).then(data => validateCube(data?.cube ?? data)).then(setCube).catch(() => {
       if (!controller.signal.aborted) setError(true)
     })
     return () => controller.abort()
@@ -38,14 +38,14 @@ export function ObservationStudio({ url, target, coords, zoom, onZoom }: {
   return <Studio cube={cube} target={target} coords={coords} zoom={zoom} onZoom={onZoom} />
 }
 
-export function Studio({ cube, target, coords, zoom, onZoom, simulated = false }: {
-  cube: Cube; target: string; coords: Coordinates; zoom: number; onZoom: (zoom: number) => void; simulated?: boolean
+export function Studio({ cube, target, coords, zoom, onZoom, simulated = false, local = false }: {
+  cube: Cube; target: string; coords: Coordinates; zoom: number; onZoom: (zoom: number) => void; simulated?: boolean; local?: boolean
 }) {
   const { width, height, bands, epochs, unit } = cube
   const query = new URLSearchParams(location.search)
   const [first, setFirst] = useState(integerParam('a', epochs.length, 0))
   const [second, setSecond] = useState(integerParam('b', epochs.length, 1))
-  const [mode, setMode] = useState<Mode>(() => query.get('mode') === 'difference' ? 'difference' : query.get('mode') === 'blink' ? 'blink' : 'wipe')
+  const [mode, setMode] = useState<Mode>(() => local || query.get('mode') === 'difference' ? 'difference' : query.get('mode') === 'blink' ? 'blink' : 'wipe')
   const [band, setBand] = useState(() => {
     const value = query.get('band') ?? 'detector-4'
     return /^detector-[1-6]$/.test(value) || /^band-\d+$/.test(value) && Number(value.slice(5)) < bands.length ? value : 'detector-4'
@@ -165,11 +165,12 @@ export function Studio({ cube, target, coords, zoom, onZoom, simulated = false }
 
   const currentViewUrl = viewUrl()
   useEffect(() => {
+    if (local) return
     const url = new URL(currentViewUrl)
     url.hash = location.hash
     history.replaceState(null, '', url)
     setCopied(false)
-  }, [currentViewUrl])
+  }, [currentViewUrl, local])
 
   async function copyView() {
     setShare(true)
@@ -188,11 +189,15 @@ export function Studio({ cube, target, coords, zoom, onZoom, simulated = false }
       epochA: epochs[first].date, epochB: epochs[second].date, sourceA: epochs[first].source ?? '',
       sourceB: epochs[second].source ?? '', wavelengthsMicrons: selected.map(index => bands[index].wavelength).join(';'),
       wavelengthBMicrons: alternateBand < 0 ? 'same as A' : bands[alternateBand].wavelength,
-      url: viewUrl(),
+      ...(local ? {} : { url: viewUrl() }),
     }
-    const csv = (value: string) => '"' + value.replace(/"/g, '""') + '"'
+    const csv = (value: unknown) => {
+      const text = String(value)
+      const safe = typeof value === 'string' && /^\s*[=+\-@]/.test(text) ? "'" + text : text
+      return '"' + safe.replace(/"/g, '""') + '"'
+    }
     download(format === 'json' ? JSON.stringify(report, null, 2) : [
-      Object.keys(report).join(','), Object.values(report).map(value => csv(String(value))).join(','),
+      Object.keys(report).join(','), Object.values(report).map(csv).join(','),
     ].join('\n'), format)
   }
 
@@ -228,7 +233,7 @@ export function Studio({ cube, target, coords, zoom, onZoom, simulated = false }
     <div className="studio-modes" aria-label="Comparison mode">
       {([['wipe', 'Split view'], ['blink', 'Blink'], ['difference', 'Difference']] as const).map(([value, label]) =>
         <button key={value} aria-pressed={mode === value} onClick={() => { setMode(value); setBlink(false) }}>{label}</button>)}
-      <button onClick={copyView}>{copied ? 'Link copied' : 'Copy view link'}</button>
+      {!local && <button onClick={copyView}>{copied ? 'Link copied' : 'Copy view link'}</button>}
     </div>
     {share && <label className="studio-link">View link<input value={currentViewUrl} readOnly onFocus={event => event.currentTarget.select()} /></label>}
     <canvas ref={canvas} className="studio-sky" width={width} height={height} tabIndex={0}
@@ -271,7 +276,7 @@ export function Studio({ cube, target, coords, zoom, onZoom, simulated = false }
         {tagged && <>
           <button onClick={() => exportCandidate('json')}>Download JSON</button>
           <button onClick={() => exportCandidate('csv')}>Download CSV</button>
-          <button onClick={copyView}>Copy candidate link</button>
+          {!local && <button onClick={copyView}>Copy candidate link</button>}
         </>}
       </div>
       {tagged && <p>{simulated ? 'Simulated candidate' : 'Candidate awaiting review'}</p>}

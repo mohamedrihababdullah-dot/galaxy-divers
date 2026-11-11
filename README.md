@@ -6,6 +6,10 @@ On Cloudflare Pages, use the repository root, the `main` production branch, `npm
 
 ## Adding observations
 
+Open **Upload observations** in the dashboard to compare 2–8 calibrated FITS cutouts from different dates, or reopen a prepared observation JSON. The browser runs Astropy and SciPy in a worker through Pyodide. FITS inputs need a 2D science image, celestial WCS, observation date, and brightness unit. Supply the shared wavelength and detector from the product metadata. The importer uses the first image’s central grid (up to 256 × 256 pixels), interpolates subsequent images onto it, and masks nonzero FLAGS and missing pixels. For SPHEREx products with a spatially varying bandpass, choose cutouts with comparable wavelength coverage before comparing epochs.
+
+**Save observation JSON** exports the prepared dataset for sharing or reopening. To publish a team dataset, place that JSON under `public/data/` and register its target, coordinates, and URL in the manifest as described below. The public catalog accepts the saved JSON wrapper as well as a plain cube.
+
 Put aligned, browser-ready image frames under `public/data/` and add their sequences to `public/data/manifest.json`. The included catalog is empty while the challenge resources are pending. The WISE 0855, Barnard’s Star, and RW Aurigae presets use simulated star fields and wavelength samples. RW Aurigae has a stationary source that changes brightness across four simulated dates.
 
 Each entry in `sequences` follows this structure. The paths and metadata below illustrate the format.

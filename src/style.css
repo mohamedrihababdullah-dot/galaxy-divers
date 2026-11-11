@@ -135,6 +135,12 @@ select { width: 100%; padding: 8px; border: 1px solid var(--border); border-radi
 .spectrum input { display: block; width: min(100%, 520px); margin: 8px 0; accent-color: var(--accent); }
 .spectrum-epoch { max-width: 240px; margin-top: 10px; }
 .studio-link { margin-bottom: 12px; }
+.upload-panel { margin-bottom: 18px; padding: 14px 18px; }
+.upload-panel summary { cursor: pointer; font-weight: 700; color: var(--accent); }
+.upload-panel form { display: grid; gap: 12px; max-width: 620px; }
+.upload-panel p { margin: 0; color: var(--muted); font-size: 14px; }
+.upload-panel label input { width: 100%; }
+.upload-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 .sky-map { margin-top: 18px; }
 .sky-map > p { padding-inline: 18px; color: var(--muted); margin: 0 0 14px; }
 .aladin-map { position: relative; width: 100%; height: clamp(280px, 50vh, 520px); background: #060a12; }

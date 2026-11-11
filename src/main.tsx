@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import './style.css'
 import { ObservationStudio, Studio } from './Studio'
 import { SkyMap } from './SkyMap'
+import { ObservationUpload, saveObservation, type UploadedObservation } from './ObservationUpload'
 import { demoCube, parseCoordinates } from './studio-data'
 
 type Frame = { image: string; observedAt: string; wavelength: string; source: string }
@@ -19,6 +20,7 @@ const presets = [
 ]
 
 function App() {
+  const [upload, setUpload] = useState<UploadedObservation | null>(null)
   const [sequences, setSequences] = useState<Sequence[]>([])
   const [loadState, setLoadState] = useState<'loading' | 'ready' | 'error'>('loading')
   const [ra, setRa] = useState(query.get('ra') ?? String(demo.ra))
@@ -63,6 +65,7 @@ function App() {
   }, [playing, count])
 
   function select(coords: typeof demo, target = '') {
+    setUpload(null)
     setDemoTarget(target)
     setViewKey(value => value + 1)
     setPosition(coords)
@@ -81,6 +84,7 @@ function App() {
 
   function changeZoom(value: number) {
     setZoom(value)
+    if (upload) return
     const url = new URL(location.href)
     url.searchParams.set('zoom', String(value))
     history.replaceState(null, '', url)
@@ -119,6 +123,12 @@ function App() {
       <section id="explorer" className="explorer" aria-labelledby="explorer-title">
       <h2 id="explorer-title">SPHEREx Blink &amp; Shift Studio</h2>
       <p className="intro">Compare the same patch of infrared sky across observations.</p>
+      <ObservationUpload onLoad={data => {
+        select(data.coords)
+        setZoom(1)
+        setUpload(data)
+        requestAnimationFrame(() => document.getElementById('observation-viewer')?.scrollIntoView({ block: 'start' }))
+      }} />
       <div className="layout">
         <aside className="panel">
           <h2>Sky coordinates</h2>
@@ -156,13 +166,15 @@ function App() {
             </select>
           </label>
         </aside>
-        <section className="panel viewer" aria-label="Observation viewer">
+        <section id="observation-viewer" className="panel viewer" aria-label="Observation viewer">
           <div className="viewer-head">
-            <h2>{demoTarget || (sequence ? sequence.target : 'Observation search')}</h2>
+            <h2>{upload?.target || demoTarget || (sequence ? sequence.target : 'Observation search')}</h2>
+            {upload && <button onClick={() => saveObservation(upload)}>Save observation JSON</button>}
             {demoTarget && <span className="badge">Simulated data</span>}
-            {!demoTarget && !sequence && <button onClick={() => select(presets[0], presets[0].target)}>Open demo</button>}
+            {!upload && !demoTarget && !sequence && <button onClick={() => select(presets[0], presets[0].target)}>Open demo</button>}
           </div>
-          {demoData ? <Studio key={viewKey} cube={demoData} target={demoTarget} coords={demoPreset} zoom={zoom} onZoom={changeZoom} simulated />
+          {upload ? <Studio key={viewKey} cube={upload.cube} target={upload.target} coords={upload.coords} zoom={zoom} onZoom={changeZoom} local />
+            : demoData ? <Studio key={viewKey} cube={demoData} target={demoTarget} coords={demoPreset} zoom={zoom} onZoom={changeZoom} simulated />
             : sequence && sequence.cube ? <ObservationStudio key={viewKey} url={sequence.cube} target={sequence.target} coords={sequence} zoom={zoom} onZoom={changeZoom} />
             : <>
           <div className="sky">
