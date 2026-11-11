@@ -6,7 +6,7 @@ On Cloudflare Pages, use the repository root, the `main` production branch, `npm
 
 ## Adding observations
 
-Put aligned, browser-ready image frames under `public/data/` and add their sequences to `public/data/manifest.json`. The included catalog is empty while the challenge resources are pending. The built-in motion preview uses a simulated star field.
+Put aligned, browser-ready image frames under `public/data/` and add their sequences to `public/data/manifest.json`. The included catalog is empty while the challenge resources are pending. The WISE 0855 and Barnard’s Star presets use simulated star fields and wavelength samples.
 
 Each entry in `sequences` follows this structure. The paths and metadata below illustrate the format.
 
@@ -27,3 +27,5 @@ Each entry in `sequences` follows this structure. The paths and metadata below i
 ```
 
 Use decimal degrees and UTC observation timestamps. Record the original observation URL for each frame. Align frames to a common sky grid and match their wavelength range and display settings before publishing. The viewer sorts frames by observation time and matches searches against prepared coordinates in the catalog.
+
+To enable Blink & Shift tools for an observation sequence, add a `cube` URL to the manifest entry. The JSON cube contains `width`, `height`, `unit`, `bands` (each with `wavelength` in microns and `detector` from 1 to 6), and `epochs` (each with a UTC `date`, a provenance `source` URL, and `planes` in band order). Each plane is a row-major array of linear pixel values on the same registered sky grid. Use `null` for masked or uncovered pixels, including entirely missing bands. Match calibration and point spread functions before interpreting difference images. Detector stacks are equal-weight means of available samples. Candidate exports include the field center and pixel index within the cube.

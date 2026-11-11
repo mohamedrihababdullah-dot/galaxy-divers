@@ -1,62 +1,32 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import './style.css'
+import { ObservationStudio, Studio } from './Studio'
+import { demoCube, parseCoordinates } from './studio-data'
 
 type Frame = { image: string; observedAt: string; wavelength: string; source: string }
-type Sequence = { target: string; ra: number; dec: number; frames: Frame[] }
+type Sequence = { target: string; ra: number; dec: number; frames: Frame[]; cube?: string }
 
 const targets = ['Barnard’s Star', 'Epsilon Indi B', 'WISE 0855', 'RW Aurigae', 'R Draconis']
 const demo = { ra: 133.795129, dec: -7.245147 }
 const query = new URLSearchParams(location.search)
 
-function DemoSky({ frame }: { frame: number }) {
-  const canvas = useRef<HTMLCanvasElement>(null)
-  useEffect(() => {
-    const ctx = canvas.current?.getContext('2d')
-    if (!ctx) return
-    const backdrop = ctx.createRadialGradient(420, 220, 30, 420, 220, 510)
-    backdrop.addColorStop(0, '#15263a')
-    backdrop.addColorStop(1, '#060a12')
-    ctx.fillStyle = backdrop
-    ctx.fillRect(0, 0, 900, 480)
-    let seed = 638
-    function random() {
-      seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0
-      return seed / 4294967296
-    }
-    for (let i = 0; i < 440; i++) {
-      ctx.fillStyle = `rgba(211,227,241,${0.12 + random() * 0.74})`
-      const x = random() * 900
-      const y = random() * 480
-      const radius = 0.35 + random() ** 6 * 2.1
-      ctx.beginPath()
-      ctx.arc(x, y, radius, 0, Math.PI * 2)
-      ctx.fill()
-    }
-    ctx.fillStyle = '#ffd78d'
-    ctx.shadowBlur = 16
-    ctx.shadowColor = '#fdb55f'
-    ctx.beginPath()
-    ctx.arc(412 + frame * 12, 253 - frame * 5, 4, 0, Math.PI * 2)
-    ctx.fill()
-    ctx.shadowBlur = 0
-  }, [frame])
-  return <canvas ref={canvas} width={900} height={480} role="img"
-    aria-label={`Simulated sky, frame ${frame + 1}. A bright point moves across the fixed star field.`} />
-}
+const presets = [
+  { target: 'WISE 0855', ...demo },
+  { target: 'Barnard’s Star', ...parseCoordinates('17h57m48.498s', '+4d41m36.114s')! },
+]
 
 function App() {
   const [sequences, setSequences] = useState<Sequence[]>([])
   const [loadState, setLoadState] = useState<'loading' | 'ready' | 'error'>('loading')
   const [ra, setRa] = useState(query.get('ra') ?? String(demo.ra))
   const [dec, setDec] = useState(query.get('dec') ?? String(demo.dec))
-  const [position, setPosition] = useState(() => {
-    const initialRa = query.get('ra')
-    const initialDec = query.get('dec')
-    if (initialRa === null || initialDec === null || !initialRa.trim() || !initialDec.trim()) return null
-    const coords = { ra: Number(initialRa), dec: Number(initialDec) }
-    return coords.ra >= 0 && coords.ra < 360 && coords.dec >= -90 && coords.dec <= 90 ? coords : null
-  })
+  const [position, setPosition] = useState(() => parseCoordinates(query.get('ra') ?? '', query.get('dec') ?? ''))
+  const [demoTarget, setDemoTarget] = useState(() => presets.find(item => item.target === query.get('demo'))?.target ?? (query.has('ra') || query.has('dec') ? '' : presets[0].target))
+  const [zoom, setZoom] = useState(() => /^[1-5]$/.test(query.get('zoom') ?? '') ? Number(query.get('zoom')) : 1)
+  const [viewKey, setViewKey] = useState(0)
+  const demoData = useMemo(() => demoTarget ? demoCube(demoTarget) : null, [demoTarget])
+  const demoPreset = presets.find(item => item.target === demoTarget) ?? presets[0]
   const [error, setError] = useState('')
   const [frame, setFrame] = useState(0)
   const [playing, setPlaying] = useState(false)
@@ -64,10 +34,13 @@ function App() {
     Math.abs(item.ra - position.ra) < 0.000001 && Math.abs(item.dec - position.dec) < 0.000001)
   const frames = sequence ? [...sequence.frames].sort((a, b) =>
     Date.parse(a.observedAt) - Date.parse(b.observedAt)) : []
-  const count = position ? frames.length : 6
+  const count = frames.length
   const current = frames[frame]
 
   useEffect(() => {
+    if (query.has('ra') || query.has('dec') || location.hash === '#explorer') {
+      document.getElementById('explorer')?.scrollIntoView({ behavior: 'instant' })
+    }
     fetch('/data/manifest.json')
       .then((response) => {
         if (!response.ok) throw new Error('Manifest unavailable')
@@ -87,22 +60,29 @@ function App() {
     return () => window.clearInterval(timer)
   }, [playing, count])
 
-  function select(coords: typeof demo | null) {
+  function select(coords: typeof demo, target = '') {
+    setDemoTarget(target)
+    setViewKey(value => value + 1)
     setPosition(coords)
     setFrame(0)
     setPlaying(false)
     setError('')
     const url = new URL(location.href)
-    if (coords) {
-      url.searchParams.set('ra', String(coords.ra))
-      url.searchParams.set('dec', String(coords.dec))
-      setRa(String(coords.ra))
-      setDec(String(coords.dec))
-    } else {
-      url.searchParams.delete('ra')
-      url.searchParams.delete('dec')
-    }
+    url.search = new URLSearchParams({
+      ra: String(coords.ra), dec: String(coords.dec), zoom: String(zoom), ...(target ? { demo: target } : {}),
+    }).toString()
+    url.hash = 'explorer'
+    setRa(String(coords.ra))
+    setDec(String(coords.dec))
     history.replaceState(null, '', url)
+  }
+
+  function changeZoom(value: number) {
+    setZoom(value)
+    const url = new URL(location.href)
+    url.searchParams.set('zoom', String(value))
+    history.replaceState(null, '', url)
+
   }
 
   return <>
@@ -135,44 +115,56 @@ function App() {
         </div>
       </section>
       <section id="explorer" className="explorer" aria-labelledby="explorer-title">
-      <h2 id="explorer-title">SPHEREx Explorer</h2>
+      <h2 id="explorer-title">SPHEREx Blink &amp; Shift Studio</h2>
       <p className="intro">Compare the same patch of infrared sky across observations.</p>
       <div className="layout">
         <aside className="panel">
           <h2>Sky coordinates</h2>
           <form onSubmit={(event) => {
             event.preventDefault()
-            const coords = { ra: Number(ra), dec: Number(dec) }
-            if (!ra.trim() || !dec.trim() || !(coords.ra >= 0 && coords.ra < 360) ||
-                !(coords.dec >= -90 && coords.dec <= 90)) {
-              setError('Enter RA from 0 to under 360°, and Dec from −90° to 90°.')
+            const coords = parseCoordinates(ra, dec)
+            if (!coords) {
+              setError('Enter decimal degrees or coordinates like 08h55m and −7d14m.')
               return
             }
             select(coords)
           }}>
-            <label>Right ascension (°)<input inputMode="decimal" value={ra} onChange={(e) => setRa(e.target.value)} /></label>
-            <label>Declination (°)<input inputMode="decimal" value={dec} onChange={(e) => setDec(e.target.value)} /></label>
+            <label>Right ascension (°)<input value={ra} onChange={(e) => setRa(e.target.value)} /></label>
+            <label>Declination (°)<input value={dec} onChange={(e) => setDec(e.target.value)} /></label>
             {error && <p className="error" role="alert">{error}</p>}
             <button className="primary" type="submit">Find observations</button>
           </form>
           <h2 className="targets">Challenge targets</h2>
-          <ul>
-            {targets.map((target) => {
-              const available = sequences.find((item) => item.target === target && item.frames.length)
-              return <li key={target}>{available
-                ? <button onClick={() => select(available)}>{target}</button>
-                : <><span>{target}</span><small>Pending</small></>}</li>
-            })}
-          </ul>
+          <label className="target-select">Quick-select target
+            <select value={demoTarget || sequence && sequence.target || ''} onChange={event => {
+              const target = event.target.value
+              const available = sequences.find(item => item.target === target && (item.cube || item.frames.length))
+              const preset = presets.find(item => item.target === target)
+              if (available) select(available)
+              else if (preset) select(preset, target)
+            }}>
+              <option value="" disabled>Choose a target</option>
+              {targets.map(target => {
+                const ready = sequences.some(item => item.target === target && (item.cube || item.frames.length))
+                const hasDemo = presets.some(item => item.target === target)
+                return <option key={target} value={target} disabled={!ready && !hasDemo}>
+                  {target}{ready ? '' : hasDemo ? ' · simulated' : ' · awaiting data'}
+                </option>
+              })}
+            </select>
+          </label>
         </aside>
         <section className="panel viewer" aria-label="Observation viewer">
           <div className="viewer-head">
-            <h2>{position ? sequence?.target ?? 'Observation search' : 'Motion preview'}</h2>
-            {!position && <span className="badge">Simulated data</span>}
-            {position && <button onClick={() => select(null)}>Open demo</button>}
+            <h2>{demoTarget || (sequence ? sequence.target : 'Observation search')}</h2>
+            {demoTarget && <span className="badge">Simulated data</span>}
+            {!demoTarget && !sequence && <button onClick={() => select(presets[0], presets[0].target)}>Open demo</button>}
           </div>
+          {demoData ? <Studio key={viewKey} cube={demoData} target={demoTarget} coords={demoPreset} zoom={zoom} onZoom={changeZoom} simulated />
+            : sequence && sequence.cube ? <ObservationStudio key={viewKey} url={sequence.cube} target={sequence.target} coords={sequence} zoom={zoom} onZoom={changeZoom} />
+            : <>
           <div className="sky">
-            {!position ? <DemoSky frame={frame} /> : current
+            {current
               ? <img src={current.image} alt={`SPHEREx observation of ${sequence?.target ?? 'selected sky field'}`} />
               : <p role="status">{loadState === 'loading' ? 'Loading observations…'
                 : loadState === 'error' ? 'Could not load the observation catalog. Reload to retry.'
@@ -185,10 +177,10 @@ function App() {
             <span>Frame {frame + 1} / {count}</span>
           </div>}
           <div className="details">
-            {!position ? 'Watch the amber point move while the background stars stay fixed.'
-              : current && <><span>{current.observedAt} · {current.wavelength}</span>
+            {current && <><span>{current.observedAt} · {current.wavelength}</span>
                 <a href={current.source}>Observation source</a></>}
           </div>
+          </>}
         </section>
       </div>
       </section>
