@@ -14,6 +14,7 @@ const query = new URLSearchParams(location.search)
 const presets = [
   { target: 'WISE 0855', ...demo },
   { target: 'Barnard’s Star', ...parseCoordinates('17h57m48.498s', '+4d41m36.114s')! },
+  { target: 'RW Aurigae', ...parseCoordinates('05h07m49.566s', '+30d24m05.177s')! },
 ]
 
 function App() {

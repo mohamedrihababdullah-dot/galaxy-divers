@@ -6,7 +6,7 @@ On Cloudflare Pages, use the repository root, the `main` production branch, `npm
 
 ## Adding observations
 
-Put aligned, browser-ready image frames under `public/data/` and add their sequences to `public/data/manifest.json`. The included catalog is empty while the challenge resources are pending. The WISE 0855 and Barnard’s Star presets use simulated star fields and wavelength samples.
+Put aligned, browser-ready image frames under `public/data/` and add their sequences to `public/data/manifest.json`. The included catalog is empty while the challenge resources are pending. The WISE 0855, Barnard’s Star, and RW Aurigae presets use simulated star fields and wavelength samples. RW Aurigae has a stationary source that changes brightness across four simulated dates.
 
 Each entry in `sequences` follows this structure. The paths and metadata below illustrate the format.
 

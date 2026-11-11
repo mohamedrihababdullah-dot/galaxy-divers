@@ -132,6 +132,9 @@ select { width: 100%; padding: 8px; border: 1px solid var(--border); border-radi
 .studio-report h3 { margin: 0; }
 .spectrum { margin: 8px 0; }
 .spectrum svg { display: block; width: min(100%, 520px); border: 1px solid var(--border); background: #080f19; color: var(--accent); }
+.spectrum input { display: block; width: min(100%, 520px); margin: 8px 0; accent-color: var(--accent); }
+.spectrum-epoch { max-width: 240px; margin-top: 10px; }
+.studio-link { margin-bottom: 12px; }
 @media (max-width: 950px) {
   .site-header { flex-wrap: wrap; }
   .site-nav { order: 1; flex: 1 0 100%; overflow-x: auto; padding-block: 2px; }

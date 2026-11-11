@@ -31,7 +31,9 @@ export function demoCube(target: string): Cube {
   const width = 220
   const height = 118
   const sky = new Float32Array(width * height)
-  let seed = target === 'WISE 0855' ? 638 : 510
+  const variable = target === 'RW Aurigae'
+  const isBarnard = target === 'Barnard’s Star'
+  let seed = variable ? 719 : isBarnard ? 510 : 638
   const random = () => {
     seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0
     return seed / 4294967296
@@ -51,14 +53,18 @@ export function demoCube(target: string): Cube {
     wavelength: .75 + 4.25 * index / 101,
     detector: 1 + Math.floor(index / 17),
   }))
-  const epochs = ['2025-05-01', '2025-11-01'].map((date, epoch) => ({
+  const dates = variable ? ['2025-05-01', '2025-11-01', '2026-05-01', '2026-11-01'] : ['2025-05-01', '2025-11-01']
+  const epochs = dates.map((date, epoch) => ({
     date,
     planes: bands.map(({ wavelength }) => {
       const pixels = Float32Array.from(sky, (value) =>
         .006 + value * (1.15 - .1 * wavelength) + .006 * (random() - .5))
-      const isBarnard = target === 'Barnard’s Star'
-      addStar(pixels, (isBarnard ? 92 : 105) + epoch * 9, (isBarnard ? 64 : 59) - epoch * 3,
-        .18 + .72 * Math.exp(-((wavelength - (isBarnard ? 1.25 : 3.7)) ** 2) / 1.2))
+      if (variable) {
+        addStar(pixels, width / 2, height / 2, [.93, .24, .52, .81][epoch] * (1.15 - .1 * wavelength))
+      } else {
+        addStar(pixels, (isBarnard ? 92 : 105) + epoch * 9, (isBarnard ? 64 : 59) - epoch * 3,
+          .18 + .72 * Math.exp(-((wavelength - (isBarnard ? 1.25 : 3.7)) ** 2) / 1.2))
+      }
       return pixels
     }),
   }))

@@ -60,6 +60,8 @@ export function Studio({ cube, target, coords, zoom, onZoom, simulated = false }
   })
   const [tagged, setTagged] = useState(query.get('candidate') === '1')
   const [share, setShare] = useState(false)
+  const [copied, setCopied] = useState(false)
+  const [spectrumEpoch, setSpectrumEpoch] = useState(() => query.get('spectrum') === 'a' ? 'a' : 'b')
   const canvas = useRef<HTMLCanvasElement>(null)
   const indices = useMemo(() => bands.flatMap((item, index) =>
     band === `detector-${item.detector}` || band === `band-${index}` ? [index] : []), [band, bands])
@@ -135,23 +137,48 @@ export function Studio({ cube, target, coords, zoom, onZoom, simulated = false }
     }
   }, [blink, height, mode, pixels, point, tagged, width, wipe, zoom])
 
-  const activeEpoch = mode === 'blink' && !blink ? first : second
-  const samples = point ? bands.flatMap(({ wavelength }, index) => {
-    const value = epochs[activeEpoch].planes[index][point.y * width + point.x]
-    return value === null || !Number.isFinite(value) ? [] : [{ wavelength, value }]
-  }).sort((a, b) => a.wavelength - b.wavelength) : []
+  const activeEpoch = spectrumEpoch === 'a' ? first : second
+  const pixelIndex = point ? point.y * width + point.x : -1
+  const spectrum = point ? bands.flatMap(({ wavelength }, index) => {
+    const value = epochs[activeEpoch].planes[index][pixelIndex]
+    return value === null || !Number.isFinite(value) ? [] : [{ x: wavelength, label: `${wavelength.toFixed(3)} µm`, value }]
+  }).sort((a, b) => a.x - b.x) : []
+  const curveBand = selected[Math.floor(selected.length / 2)]
+  const lightCurve = point ? epochs.flatMap(({ date, planes }) => {
+    const value = planes[curveBand][pixelIndex]
+    return value === null || !Number.isFinite(value) ? [] : [{ x: Date.parse(date), label: date, value }]
+  }).sort((a, b) => a.x - b.x) : []
 
-  function candidateUrl() {
+  function viewUrl() {
     const url = new URL(location.href)
     url.search = new URLSearchParams({
       ra: String(coords.ra), dec: String(coords.dec), zoom: String(zoom), a: String(first), b: String(second),
-      band: indices.length ? band : 'band-0', mode, wipe: String(wipe),
+      band: indices.length ? band : 'band-0', mode, wipe: String(wipe), spectrum: spectrumEpoch,
       ...(alternateBand >= 0 ? { bandB: String(alternateBand) } : {}),
       ...(simulated ? { demo: target } : {}),
-      ...(point ? { x: String(point.x), y: String(point.y), candidate: '1' } : {}),
+      ...(point ? { x: String(point.x), y: String(point.y) } : {}),
+      ...(point && tagged ? { candidate: '1' } : {}),
     }).toString()
     url.hash = 'explorer'
     return url.href
+  }
+
+  const currentViewUrl = viewUrl()
+  useEffect(() => {
+    const url = new URL(currentViewUrl)
+    url.hash = location.hash
+    history.replaceState(null, '', url)
+    setCopied(false)
+  }, [currentViewUrl])
+
+  async function copyView() {
+    setShare(true)
+    try {
+      await navigator.clipboard.writeText(currentViewUrl)
+      setCopied(true)
+    } catch {
+      setCopied(false)
+    }
   }
 
   function exportCandidate(format: 'json' | 'csv') {
@@ -161,7 +188,7 @@ export function Studio({ cube, target, coords, zoom, onZoom, simulated = false }
       epochA: epochs[first].date, epochB: epochs[second].date, sourceA: epochs[first].source ?? '',
       sourceB: epochs[second].source ?? '', wavelengthsMicrons: selected.map(index => bands[index].wavelength).join(';'),
       wavelengthBMicrons: alternateBand < 0 ? 'same as A' : bands[alternateBand].wavelength,
-      url: candidateUrl(),
+      url: viewUrl(),
     }
     const csv = (value: string) => '"' + value.replace(/"/g, '""') + '"'
     download(format === 'json' ? JSON.stringify(report, null, 2) : [
@@ -201,7 +228,9 @@ export function Studio({ cube, target, coords, zoom, onZoom, simulated = false }
     <div className="studio-modes" aria-label="Comparison mode">
       {([['wipe', 'Split view'], ['blink', 'Blink'], ['difference', 'Difference']] as const).map(([value, label]) =>
         <button key={value} aria-pressed={mode === value} onClick={() => { setMode(value); setBlink(false) }}>{label}</button>)}
+      <button onClick={copyView}>{copied ? 'Link copied' : 'Copy view link'}</button>
     </div>
+    {share && <label className="studio-link">View link<input value={currentViewUrl} readOnly onFocus={event => event.currentTarget.select()} /></label>}
     <canvas ref={canvas} className="studio-sky" width={width} height={height} tabIndex={0}
       aria-label="Sky comparison. Click to sample a pixel, or use arrow keys to move the selection."
       onClick={event => {
@@ -229,37 +258,52 @@ export function Studio({ cube, target, coords, zoom, onZoom, simulated = false }
     {alternateBand >= 0 && <p className="studio-help">Different wavelengths can leave residuals around stationary stars. Match bands to investigate motion.</p>}
     {point && <div className="studio-report">
       <h3>Pixel spectrum · ({point.x}, {point.y})</h3>
-      <p>Epoch {activeEpoch === first && mode === 'blink' && !blink ? 'A' : 'B'} · {unit}</p>
-      {samples.length ? <Spectrum samples={samples} /> : <p>No valid samples at this pixel.</p>}
+      <label className="spectrum-epoch">Spectrum epoch<select value={spectrumEpoch} onChange={event => setSpectrumEpoch(event.target.value)}>
+        <option value="a">Epoch A · {epochs[first].date}</option>
+        <option value="b">Epoch B · {epochs[second].date}</option>
+      </select></label>
+      <PixelChart samples={spectrum} axis="Wavelength" unit={unit} />
+      <h3>Pixel light curve</h3>
+      <p>Band {curveBand + 1} · {bands[curveBand].wavelength.toFixed(3)} µm across observation dates</p>
+      <PixelChart samples={lightCurve} axis="Observation date" unit={unit} />
       <div className="studio-modes">
         <button aria-pressed={tagged} onClick={() => { setTagged(!tagged); setShare(false) }}>{tagged ? 'Remove candidate tag' : `Tag as ${tag}`}</button>
         {tagged && <>
           <button onClick={() => exportCandidate('json')}>Download JSON</button>
           <button onClick={() => exportCandidate('csv')}>Download CSV</button>
-          <button onClick={() => setShare(true)}>Share candidate</button>
+          <button onClick={copyView}>Copy candidate link</button>
         </>}
       </div>
       {tagged && <p>{simulated ? 'Simulated candidate' : 'Candidate awaiting review'}</p>}
-      {share && <label>Candidate link<input value={candidateUrl()} readOnly onFocus={event => event.currentTarget.select()} /></label>}
     </div>}
   </div>
 }
 
-function Spectrum({ samples }: { samples: { wavelength: number; value: number }[] }) {
+function PixelChart({ samples, axis, unit }: {
+  samples: { x: number; label: string; value: number }[]
+  axis: string
+  unit: string
+}) {
+  const [index, setIndex] = useState(0)
+  if (!samples.length) return <p>No valid samples at this pixel.</p>
+  const activeIndex = Math.min(index, samples.length - 1)
+  const active = samples[activeIndex]
   const values = samples.map(item => item.value)
   const low = Math.min(...values)
   const high = Math.max(...values)
-  const start = samples[0].wavelength
-  const end = samples[samples.length - 1].wavelength
-  const points = samples.map(({ wavelength, value }) => [
-    12 + (end === start ? .5 : (wavelength - start) / (end - start)) * 376,
+  const start = samples[0].x
+  const end = samples[samples.length - 1].x
+  const points = samples.map(({ x, value }) => [
+    12 + (end === start ? .5 : (x - start) / (end - start)) * 376,
     86 - (high === low ? .5 : (value - low) / (high - low)) * 74,
   ])
   return <figure className="spectrum">
-    <svg viewBox="0 0 400 100" role="img" aria-label={`Pixel brightness from ${low.toPrecision(3)} to ${high.toPrecision(3)} across ${samples.length} wavelength samples`}>
+    <svg viewBox="0 0 400 100" role="img" aria-label={`Brightness by ${axis.toLowerCase()}, ${samples.length} samples`}>
       <polyline points={points.map(point => point.join(',')).join(' ')} fill="none" stroke="currentColor" strokeWidth="2" />
-      {points.length === 1 && <circle cx={points[0][0]} cy={points[0][1]} r="3" fill="currentColor" />}
+      <circle cx={points[activeIndex][0]} cy={points[activeIndex][1]} r="4" fill="currentColor" />
     </svg>
-    <figcaption>{start.toFixed(2)}–{end.toFixed(2)} µm · {samples.length} samples · {low.toPrecision(3)} to {high.toPrecision(3)}</figcaption>
+    {samples.length > 1 && <input type="range" aria-label={`${axis} sample`} min="0" max={samples.length - 1}
+      value={activeIndex} onChange={event => setIndex(Number(event.target.value))} />}
+    <figcaption>{active.label} · {active.value.toPrecision(4)} {unit} · {samples.length} samples</figcaption>
   </figure>
 }
