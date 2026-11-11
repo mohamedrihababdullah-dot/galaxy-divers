@@ -27,7 +27,7 @@ function loadAladin() {
       script.remove()
       reject(error)
     }
-    script.src = 'https://aladin.cds.unistra.fr/AladinLite/api/v3/latest/aladin.js'
+    script.src = 'https://cdn.jsdelivr.net/npm/aladin-lite@3/dist/aladin.js'
     script.async = true
     script.onerror = () => fail(new Error('Could not load Aladin Lite'))
     script.onload = () => {
@@ -65,7 +65,7 @@ export function SkyMap({ coords, onSearch }: {
     loadAladin().then(api => {
       if (!active || !container.current) return
       atlas.current = api.aladin(container.current, {
-        survey: 'https://alasky.cds.unistra.fr/DSS/DSSColor/',
+        survey: 'P/DSS2/color',
         fov: 0.5,
         cooFrame: 'ICRSd',
         showCooGridControl: true,
