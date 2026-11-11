@@ -107,15 +107,26 @@ function App() {
 
   return <>
     <header className="site-header">
-      <a className="brand" href="#home"><span className="orbit" aria-hidden="true">✦</span> Galaxy Divers</a>
-      <a className="header-link" href="#explorer">SPHEREx Explorer <span aria-hidden="true">↗</span></a>
+      <a className="brand" href="#home">
+        <span className="galaxy-mark" aria-hidden="true"><i /><i /><i /></span>
+        <span className="brand-copy"><strong>Galaxy Divers</strong><small>Dive into · Discover · Explore</small></span>
+      </a>
+      <nav className="site-nav" aria-label="Main navigation">
+        <a className="nav-home" href="#home"><span aria-hidden="true">⌂</span> Home</a>
+        <a href="#explorer"><span aria-hidden="true">♄</span> Explore</a>
+        <a href="#spherex"><span aria-hidden="true">✧</span> SPHEREx</a>
+        <a href="#planet-x"><span aria-hidden="true">ⓘ</span> Planet X</a>
+        <a href="#about"><span aria-hidden="true">ⓘ</span> About</a>
+      </nav>
+      <a className="header-link" href="#explorer"><span aria-hidden="true">✦</span> Explore the Unknown</a>
     </header>
     <main id="home">
       <section className="hero" aria-labelledby="hero-title">
         <div className="hero-art" aria-hidden="true">
           <div className="dive-trail" />
-          <img className="diver" src="/hero/diver.png" alt="" fetchPriority="high" />
+          <img className="diver" src="/hero/diver-pointing.png" alt="" fetchPriority="high" />
         </div>
+        <a className="planet-label" href="#planet-x">Planet X <small>Hypothetical</small></a>
         <div className="hero-content">
           <p className="hero-kicker">Planet X &amp; SPHEREx</p>
           <h1 id="hero-title">Dive into the<br />unseen sky.</h1>
@@ -180,6 +191,11 @@ function App() {
           </div>
         </section>
       </div>
+      </section>
+      <section className="mission-notes" aria-label="About the project">
+        <div id="spherex"><h2>SPHEREx</h2><p>NASA’s SPHEREx mission surveys the sky in near-infrared light. Repeat observations let us compare the same patch of sky over time.</p></div>
+        <div id="planet-x"><h2>Planet X</h2><p>Planet X is a hypothetical planet beyond Neptune. The red planet in the hero is an illustration.</p></div>
+        <div id="about"><h2>About Galaxy Divers</h2><p>We’re building an infrared sky explorer for the NASA International Space Apps Challenge.</p></div>
       </section>
     </main>
   </>
