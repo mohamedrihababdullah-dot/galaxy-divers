@@ -18,30 +18,15 @@ type AladinApi = {
 
 let loading: Promise<AladinApi> | undefined
 
+const atlasModuleUrl = 'https://cdn.jsdelivr.net/npm/aladin-lite@3/dist/aladin.js'
+
 function loadAladin() {
   loading ??= new Promise<AladinApi>((resolve, reject) => {
-    const script = document.createElement('script')
-    const timeout = window.setTimeout(() => fail(new Error('Sky map request timed out')), 20000)
-    function fail(error: unknown) {
-      window.clearTimeout(timeout)
-      script.remove()
-      reject(error)
-    }
-    script.src = 'https://cdn.jsdelivr.net/npm/aladin-lite@3/dist/aladin.js'
-    script.async = true
-    script.onerror = () => fail(new Error('Could not load Aladin Lite'))
-    script.onload = () => {
-      const api = (window as Window & { A?: AladinApi }).A
-      if (!api) {
-        fail(new Error('Aladin Lite did not initialize'))
-        return
-      }
-      api.init.then(() => {
-        window.clearTimeout(timeout)
-        resolve(api)
-      }, fail)
-    }
-    document.head.append(script)
+    const timeout = window.setTimeout(() => reject(new Error('Sky map request timed out')), 20000)
+    import(/* @vite-ignore */ atlasModuleUrl).then(async ({ default: api }: { default: AladinApi }) => {
+      await api.init
+      resolve(api)
+    }).catch(reject).finally(() => window.clearTimeout(timeout))
   }).catch(error => {
     loading = undefined
     throw error
