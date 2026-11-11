@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import './style.css'
 import { ObservationStudio, Studio } from './Studio'
+import { SkyMap } from './SkyMap'
 import { demoCube, parseCoordinates } from './studio-data'
 
 type Frame = { image: string; observedAt: string; wavelength: string; source: string }
@@ -184,6 +185,7 @@ function App() {
           </>}
         </section>
       </div>
+      <SkyMap coords={position ?? demoPreset} onSearch={coords => select(coords)} />
       </section>
       <section className="mission-notes" aria-label="About the project">
         <div id="spherex"><h2>SPHEREx</h2><p>NASA’s SPHEREx mission surveys the sky in near-infrared light. Repeat observations let us compare the same patch of sky over time.</p></div>
