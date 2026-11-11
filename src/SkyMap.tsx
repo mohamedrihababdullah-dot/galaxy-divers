@@ -50,7 +50,7 @@ export function SkyMap({ coords, onSearch }: {
     loadAladin().then(api => {
       if (!active || !container.current) return
       atlas.current = api.aladin(container.current, {
-        survey: 'P/DSS2/color',
+        survey: 'https://skies.esac.esa.int/DSSColor/',
         fov: 0.5,
         cooFrame: 'ICRSd',
         showCooGridControl: true,
@@ -72,7 +72,7 @@ export function SkyMap({ coords, onSearch }: {
       <h2 id="sky-map-title">Aladin Lite sky map</h2>
       {!started && <button onClick={() => setStarted(true)}>Open sky map</button>}
     </div>
-    <p>DSS optical reference imagery via CDS. Pan or zoom, then search the observation catalog at the map center.</p>
+    <p>DSS optical reference imagery from CDS, served by ESA. Pan or zoom, then search the observation catalog at the map center.</p>
     {started && <>
       <div ref={container} className="aladin-map" hidden={status === 'error'} aria-label="Interactive sky map" />
       {status === 'loading' && <p role="status">Loading sky map…</p>}
