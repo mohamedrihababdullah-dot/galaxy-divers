@@ -1,3 +1,5 @@
+@import url('/hero/galaxy-divers-logo.css');
+
 :root {
   color-scheme: dark;
   font-family: Inter, system-ui, sans-serif;
@@ -33,10 +35,7 @@ html { scroll-behavior: smooth; }
 .brand-copy { display: grid; gap: 1px; }
 .brand-copy strong { font-size: clamp(17px, 1.8vw, 25px); font-style: italic; letter-spacing: .03em; text-transform: uppercase; text-shadow: 0 0 12px #4699e7; }
 .brand-copy small { font-size: 9px; text-transform: uppercase; color: #c7d8e9; }
-.galaxy-mark { position: relative; flex: 0 0 57px; height: 40px; transform: rotate(-31deg); filter: drop-shadow(0 0 5px #159bff); }
-.galaxy-mark i { position: absolute; inset: 12% 0; border: 2px solid #83d7ff; border-left-color: #315b94; border-radius: 50%; }
-.galaxy-mark i:nth-child(2) { inset: 22% 12%; transform: rotate(15deg); }
-.galaxy-mark i:nth-child(3) { inset: 34% 28%; transform: rotate(-20deg); background: radial-gradient(ellipse, #fff1da 8%, #8ed8ff 29%, #1a4c89 63%, transparent 74%); border-width: 1px; }
+.galaxy-mark { display: block; width: 60px; height: 60px; border-radius: 50%; object-fit: cover; filter: drop-shadow(0 0 6px #287ab966); }
 .site-nav { display: flex; align-items: center; gap: clamp(3px, 1vw, 16px); }
 .site-nav a, .header-link { display: inline-flex; align-items: center; gap: 6px; border: 1px solid transparent; border-radius: 999px; color: #edf3fa; text-decoration: none; white-space: nowrap; }
 .site-nav a { padding: 5px 9px; font-size: 14px; }
@@ -52,7 +51,70 @@ html { scroll-behavior: smooth; }
   isolation: isolate;
   overflow: hidden;
   min-height: clamp(560px, 76svh, 820px);
-  background: #050a15 url('/hero/solar-system.png') center / 100% 100% no-repeat;
+  background: #050a15;
+}
+.solar-scene {
+  position: absolute;
+  z-index: -2;
+  inset: 0;
+  background: url('/hero/solar-system.png') center / 100% 100% no-repeat;
+}
+.hero-planet {
+  position: absolute;
+  width: var(--diameter);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  box-shadow: inset -6px -3px 10px #02050ce0, inset 2px 1px 5px #fff8;
+}
+.jupiter {
+  --diameter: clamp(21px, 5.6vw, 100px);
+  left: 50%;
+  top: 28%;
+  background: radial-gradient(ellipse at 39% 64%, #bc6046 0 8%, transparent 13%),
+    repeating-linear-gradient(9deg, #dbad89 0 12%, #966553 15% 22%, #e8c9a6 25% 36%, #bf967b 42% 48%);
+}
+.saturn {
+  --diameter: clamp(17px, 4.1vw, 76px);
+  left: 55%;
+  top: 38%;
+  background: repeating-linear-gradient(8deg, #d6b27c 0 17%, #e9cd9d 23% 32%, #ad895b 40% 46%);
+}
+.saturn::after {
+  content: '';
+  position: absolute;
+  inset: 32% -34%;
+  border: clamp(2px, .45vw, 7px) double #dfca9d;
+  border-top-color: #dfca9d55;
+  border-radius: 50%;
+  transform: rotate(-20deg);
+}
+.uranus {
+  --diameter: clamp(13px, 2.9vw, 52px);
+  left: 56.6%;
+  top: 23%;
+  background: radial-gradient(circle at 25% 29%, #d6fcff, #6ebfcd 48%, #195575 85%);
+}
+.hero-probe {
+  position: absolute;
+  top: 19%;
+  left: 34%;
+  display: grid;
+  justify-items: center;
+  gap: 3px;
+  transform: translate(-50%, -50%);
+  color: #c4edff;
+  font-size: clamp(10px, 1.1vw, 14px);
+  font-weight: 700;
+  text-decoration: none;
+  text-shadow: 0 1px 4px #02060b, 0 0 9px #1d8ddb;
+}
+.hero-probe span {
+  width: clamp(21px, 2.8vw, 42px);
+  aspect-ratio: 1.2;
+  clip-path: polygon(0 25%, 62% 0, 87% 12%, 87% 33%, 100% 39%, 100% 70%, 72% 74%, 69% 100%, 0 75%);
+  background: linear-gradient(#dde9f7, #769bb9 32%, #334960 56%, #8aafd0 78%, #18324c);
+  transform: rotate(-24deg);
 }
 .hero::after {
   position: absolute;
@@ -168,9 +230,11 @@ select { width: 100%; padding: 8px; border: 1px solid var(--border); border-radi
 @media (max-width: 700px) {
   .site-header { padding-inline: 15px; gap: 9px; }
   .brand { gap: 8px; }
-  .galaxy-mark { flex-basis: 39px; height: 29px; }
+  .galaxy-mark { width: 44px; height: 44px; }
   .site-nav a { font-size: 12px; padding-inline: 7px; }
-  .hero { min-height: 610px; background-position: center top; background-size: 100% 59%; }
+  .hero { min-height: 610px; }
+  .solar-scene { bottom: 41%; }
+  .hero-probe { top: 11.2%; }
   .hero-art { width: min(57vw, 330px); height: 36%; top: 21%; right: 14%; }
   .planet-label { top: 8%; right: 12%; }
   .hero::after { background: linear-gradient(0deg, #090f19 1%, #050a15ef 24%, #050a15aa 42%, transparent 66%); }
