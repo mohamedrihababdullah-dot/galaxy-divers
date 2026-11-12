@@ -110,8 +110,8 @@ function App() {
       <a className="header-link" href="#explorer"><span aria-hidden="true">✦</span> Explore the Unknown</a>
     </header>
     <main id="home">
-      <DraggableProbe />
       <section className="hero" aria-labelledby="hero-title">
+        <DraggableProbe />
         <div className="solar-scene" role="img" aria-label="Illustration of the Sun and all eight planets: Mercury, Venus, Earth, Mars, Jupiter, Saturn, Uranus, and Neptune. Hypothetical Planet X is shown beyond Neptune.">
           <span className="hero-planet jupiter" title="Jupiter" />
           <span className="hero-planet saturn" title="Saturn" />
