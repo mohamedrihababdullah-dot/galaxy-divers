@@ -96,7 +96,7 @@ function App() {
   return <>
     <header className="site-header">
       <a className="brand" href="#home">
-        <span className="galaxy-mark" aria-hidden="true"><i /><i /><i /></span>
+        <span className="galaxy-mark" aria-hidden="true" />
         <span className="brand-copy"><strong>Galaxy Divers</strong><small>Dive into · Discover · Explore</small></span>
       </a>
       <nav className="site-nav" aria-label="Main navigation">
@@ -110,6 +110,12 @@ function App() {
     </header>
     <main id="home">
       <section className="hero" aria-labelledby="hero-title">
+        <div className="solar-scene" role="img" aria-label="Illustration of the Sun and all eight planets: Mercury, Venus, Earth, Mars, Jupiter, Saturn, Uranus, and Neptune. Hypothetical Planet X is shown beyond Neptune.">
+          <span className="hero-planet jupiter" title="Jupiter" />
+          <span className="hero-planet saturn" title="Saturn" />
+          <span className="hero-planet uranus" title="Uranus" />
+        </div>
+        <a className="hero-probe" href="#spherex"><span aria-hidden="true" />SPHEREx</a>
         <div className="hero-art" aria-hidden="true">
           <div className="dive-trail" />
           <img className="diver" src="/hero/diver-pointing.png" alt="" fetchPriority="high" />
