@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import './style.css'
 import { ObservationStudio, Studio } from './Studio'
 import { SkyMap } from './SkyMap'
+import { SkyGuide } from './SkyGuide'
 import { ObservationUpload, saveObservation, type UploadedObservation } from './ObservationUpload'
 import { demoCube, parseCoordinates } from './studio-data'
 
@@ -64,7 +65,7 @@ function App() {
     return () => window.clearInterval(timer)
   }, [playing, count])
 
-  function select(coords: typeof demo, target = '') {
+  function select(coords: typeof demo, target = '', mode?: 'blink' | 'difference') {
     setUpload(null)
     setDemoTarget(target)
     setViewKey(value => value + 1)
@@ -76,6 +77,7 @@ function App() {
     url.search = new URLSearchParams({
       ra: String(coords.ra), dec: String(coords.dec), zoom: String(zoom), ...(target ? { demo: target } : {}),
     }).toString()
+    if (mode) url.searchParams.set('mode', mode)
     url.hash = 'explorer'
     setRa(String(coords.ra))
     setDec(String(coords.dec))
@@ -117,9 +119,15 @@ function App() {
           <p className="hero-kicker">Planet X &amp; SPHEREx</p>
           <h1 id="hero-title">Dive into the<br />unseen sky.</h1>
           <p>Explore the infrared sky and see how it changes over time with Galaxy Divers.</p>
-          <a className="hero-action" href="#explorer"><span aria-hidden="true">▷</span> Explore the sky</a>
+          <a className="hero-action" href="#sky-guide"><span aria-hidden="true">▷</span> Spot what moves</a>
         </div>
       </section>
+      <SkyGuide onDemo={target => {
+        const preset = presets.find(item => item.target === target)
+        if (!preset) return
+        select(preset, target, target === 'WISE 0855' ? 'blink' : 'difference')
+        requestAnimationFrame(() => document.getElementById('observation-viewer')?.scrollIntoView({ block: 'start' }))
+      }} />
       <section id="explorer" className="explorer" aria-labelledby="explorer-title">
       <h2 id="explorer-title">SPHEREx Blink &amp; Shift Studio</h2>
       <p className="intro">Compare the same patch of infrared sky across observations.</p>
@@ -200,7 +208,6 @@ function App() {
       <SkyMap coords={position ?? demoPreset} onSearch={coords => select(coords)} />
       </section>
       <section className="mission-notes" aria-label="About the project">
-        <div id="spherex"><h2>SPHEREx</h2><p>NASA’s SPHEREx mission surveys the sky in near-infrared light. Repeat observations let us compare the same patch of sky over time.</p></div>
         <div id="planet-x"><h2>Planet X</h2><p>Planet X is a hypothetical planet beyond Neptune. The red planet in the hero is an illustration.</p></div>
         <div id="about"><h2>About Galaxy Divers</h2><p>We’re building an infrared sky explorer for the NASA International Space Apps Challenge.</p></div>
       </section>

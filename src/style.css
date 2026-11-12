@@ -84,6 +84,22 @@ html { scroll-behavior: smooth; }
 }
 .explorer { width: min(1160px, calc(100% - 44px)); margin: 38px auto 60px; scroll-margin-top: 24px; }
 #explorer-title { font-size: clamp(32px, 5vw, 52px); letter-spacing: -.045em; }
+.sky-guide { width: min(1160px, calc(100% - 44px)); margin: 36px auto 66px; scroll-margin-top: 24px; }
+.guide-intro { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); align-items: center; gap: 24px; }
+.guide-intro h2 { margin: 0; font-size: clamp(34px, 5vw, 62px); letter-spacing: -.055em; }
+.guide-intro p, .guide-cards p, .guide-cards li { color: var(--muted); line-height: 1.55; }
+.guide-intro p { max-width: 48ch; }
+.guide-sky { position: relative; min-height: 190px; aspect-ratio: 2.4; background: radial-gradient(ellipse at 68% 40%, #10263c, #040810 70%); }
+.guide-star { position: absolute; width: 5px; height: 5px; background: #e4f4ff; border-radius: 50%; transform: translate(-50%, -50%); box-shadow: 0 0 7px #a8d6ff; }
+.guide-mover { opacity: .86; }
+.guide-revealed { outline: 2px solid #ffbb69; outline-offset: 6px; }
+.guide-controls { padding: 12px; display: flex; align-items: center; flex-wrap: wrap; gap: 8px 12px; font-size: 14px; }
+.guide-controls span { color: var(--muted); }
+.guide-cards { margin-top: 22px; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 265px), 1fr)); gap: 12px; }
+.guide-cards article { padding: 16px; scroll-margin-top: 24px; }
+.guide-cards h3 { margin: 0; }
+.guide-cards ol { padding-left: 20px; }
+.guide-cards li + li { margin-top: 6px; }
 .mission-notes { width: min(1160px, calc(100% - 44px)); margin: 0 auto 60px; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); gap: 24px; }
 .mission-notes > div { border-top: 1px solid var(--border); padding-top: 16px; scroll-margin-top: 22px; }
 .mission-notes p { color: var(--muted); line-height: 1.55; }
