@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import './style.css'
+import { DraggableProbe } from './DraggableProbe'
 import { ObservationStudio, Studio } from './Studio'
 import { SkyMap } from './SkyMap'
 import { SkyGuide } from './SkyGuide'
@@ -109,13 +110,13 @@ function App() {
       <a className="header-link" href="#explorer"><span aria-hidden="true">✦</span> Explore the Unknown</a>
     </header>
     <main id="home">
+      <DraggableProbe />
       <section className="hero" aria-labelledby="hero-title">
         <div className="solar-scene" role="img" aria-label="Illustration of the Sun and all eight planets: Mercury, Venus, Earth, Mars, Jupiter, Saturn, Uranus, and Neptune. Hypothetical Planet X is shown beyond Neptune.">
           <span className="hero-planet jupiter" title="Jupiter" />
           <span className="hero-planet saturn" title="Saturn" />
           <span className="hero-planet uranus" title="Uranus" />
         </div>
-        <a className="hero-probe" href="#spherex"><span aria-hidden="true" />SPHEREx</a>
         <div className="hero-art" aria-hidden="true">
           <div className="dive-trail" />
           <img className="diver" src="/hero/diver-pointing.png" alt="" fetchPriority="high" />
