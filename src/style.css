@@ -110,6 +110,19 @@ html { scroll-behavior: smooth; }
 .hero-action { display: inline-flex; gap: 10px; align-items: center; padding: 12px 17px; border: 1px solid #73cbff; border-radius: 8px; background: #0b2540; color: #edf8ff; text-decoration: none; font-weight: 700; box-shadow: 0 0 22px #187acc4d; }
 .hero-action:hover { background: #17466d; }
 .hero-action span { font-size: 20px; line-height: 1; color: #8bdbff; }
+.hero-spacecraft {
+  position: absolute;
+  z-index: -1;
+  right: 6%;
+  bottom: 16%;
+  width: clamp(110px, 18vw, 310px);
+  height: auto;
+  transform: rotate(26deg);
+  opacity: .88;
+  filter: brightness(.78) sepia(.24) hue-rotate(169deg) saturate(1.45)
+    drop-shadow(2px -2px 4px #509aff88) drop-shadow(0 0 18px #185fbb70);
+  pointer-events: none;
+}
 .hero-art { position: absolute; z-index: -1; width: min(31vw, 500px); height: 57%; right: 13%; top: 34%; }
 .diver { display: block; position: relative; width: 100%; height: 100%; object-fit: contain; object-position: right top; transform-origin: 88% 16%; filter: drop-shadow(0 0 23px #258fff66); animation: space-dive 7s ease-in-out infinite; }
 .dive-trail { position: absolute; inset: 52% 23% 2% -23%; transform: rotate(-27deg); background: radial-gradient(ellipse at center, #309dff6b 0%, #0b59aa46 28%, transparent 70%); animation: trail-pulse 7s ease-in-out infinite; }
@@ -213,6 +226,7 @@ select { width: 100%; padding: 8px; border: 1px solid var(--border); border-radi
   .site-nav a { font-size: 12px; padding-inline: 7px; }
   .hero { min-height: 610px; }
   .solar-scene { bottom: 41%; }
+  .hero-spacecraft { right: 5%; top: 34%; bottom: auto; width: clamp(80px, 22vw, 140px); }
   .hero-art { width: min(57vw, 330px); height: 36%; top: 21%; right: 14%; }
   .planet-label { top: 8%; right: 12%; }
   .hero::after { background: linear-gradient(0deg, #090f19 1%, #050a15ef 24%, #050a15aa 42%, transparent 66%); }
