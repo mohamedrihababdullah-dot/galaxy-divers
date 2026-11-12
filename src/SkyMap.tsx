@@ -40,12 +40,10 @@ export function SkyMap({ coords, onSearch }: {
 }) {
   const container = useRef<HTMLDivElement>(null)
   const atlas = useRef<Atlas | null>(null)
-  const [started, setStarted] = useState(false)
   const [attempt, setAttempt] = useState(0)
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading')
 
   useEffect(() => {
-    if (!started) return
     let active = true
     loadAladin().then(api => {
       if (!active || !container.current) return
@@ -60,7 +58,7 @@ export function SkyMap({ coords, onSearch }: {
       if (active) setStatus('error')
     })
     return () => { active = false }
-  }, [attempt, started])
+  }, [attempt])
 
   const { ra, dec } = coords
   useEffect(() => {
@@ -70,10 +68,8 @@ export function SkyMap({ coords, onSearch }: {
   return <section className="panel sky-map" aria-labelledby="sky-map-title">
     <div className="viewer-head">
       <h2 id="sky-map-title">Aladin Lite sky map</h2>
-      {!started && <button onClick={() => setStarted(true)}>Open sky map</button>}
     </div>
     <p>DSS optical reference imagery from CDS, served by ESA. Pan or zoom, then search the observation catalog at the map center.</p>
-    {started && <>
       <div ref={container} className="aladin-map" hidden={status === 'error'} aria-label="Interactive sky map" />
       {status === 'loading' && <p role="status">Loading sky map…</p>}
       {status === 'error' && <p role="status">The embedded sky map could not load. <button onClick={() => {
@@ -90,6 +86,5 @@ export function SkyMap({ coords, onSearch }: {
         <button onClick={() => atlas.current?.gotoRaDec(ra, dec)}>Return to target</button>
       </div>}
       <p><a href="https://aladin.cds.unistra.fr/AladinLite/" target="_blank" rel="noreferrer">Open Aladin Lite at CDS ↗</a></p>
-    </>}
   </section>
 }
