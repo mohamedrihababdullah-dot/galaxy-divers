@@ -95,9 +95,11 @@ html { scroll-behavior: smooth; }
   top: 23%;
   background: radial-gradient(circle at 25% 29%, #d6fcff, #6ebfcd 48%, #195575 85%);
 }
+#home { position: relative; }
 .hero-probe {
   position: absolute;
-  top: 19%;
+  z-index: 5;
+  top: clamp(106px, 14.44svh, 156px);
   left: 34%;
   display: grid;
   justify-items: center;
@@ -108,13 +110,17 @@ html { scroll-behavior: smooth; }
   font-weight: 700;
   text-decoration: none;
   text-shadow: 0 1px 4px #02060b, 0 0 9px #1d8ddb;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
 }
-.hero-probe span {
-  width: clamp(21px, 2.8vw, 42px);
-  aspect-ratio: 1.2;
-  clip-path: polygon(0 25%, 62% 0, 87% 12%, 87% 33%, 100% 39%, 100% 70%, 72% 74%, 69% 100%, 0 75%);
-  background: linear-gradient(#dde9f7, #769bb9 32%, #334960 56%, #8aafd0 78%, #18324c);
-  transform: rotate(-24deg);
+.hero-probe:active { cursor: grabbing; }
+.hero-probe img {
+  display: block;
+  width: clamp(44px, 6vw, 88px);
+  height: auto;
+  pointer-events: none;
+  filter: drop-shadow(0 0 6px #4199ea80);
 }
 .hero::after {
   position: absolute;
@@ -234,7 +240,7 @@ select { width: 100%; padding: 8px; border: 1px solid var(--border); border-radi
   .site-nav a { font-size: 12px; padding-inline: 7px; }
   .hero { min-height: 610px; }
   .solar-scene { bottom: 41%; }
-  .hero-probe { top: 11.2%; }
+  .hero-probe { top: 68px; }
   .hero-art { width: min(57vw, 330px); height: 36%; top: 21%; right: 14%; }
   .planet-label { top: 8%; right: 12%; }
   .hero::after { background: linear-gradient(0deg, #090f19 1%, #050a15ef 24%, #050a15aa 42%, transparent 66%); }
