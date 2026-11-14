@@ -202,11 +202,14 @@ function App() {
               return
             }
             select(coords)
+            const map = document.getElementById('aladin-sky-map')
+            map?.focus({ preventScroll: true })
+            map?.scrollIntoView({ block: 'start' })
           }}>
             <label>Right ascension (°)<input value={ra} onChange={(e) => setRa(e.target.value)} /></label>
             <label>Declination (°)<input value={dec} onChange={(e) => setDec(e.target.value)} /></label>
             {error && <p className="error" role="alert">{error}</p>}
-            <button className="primary" type="submit">Find observations</button>
+            <button className="primary" type="submit" aria-controls="aladin-sky-map">Find with Aladin</button>
           </form>
           <h2 className="targets">Challenge targets</h2>
           <label className="target-select">Quick-select target
@@ -305,7 +308,7 @@ function App() {
           </>}
         </section>
       </div>
-      <SkyMap coords={(demoTarget ? demoPreset : position) ?? demoPreset} onSearch={coords => select(coords)} />
+      <SkyMap coords={(demoTarget ? demoPreset : position) ?? demoPreset} searchVersion={viewKey} onSearch={coords => select(coords)} />
       <ArchiveSearch coords={(demoTarget ? demoPreset : position) ?? demoPreset} />
       </section>
       <section className="mission-notes" aria-label="About the project">

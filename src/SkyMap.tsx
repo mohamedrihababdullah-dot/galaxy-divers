@@ -10,6 +10,7 @@ type Atlas = {
   removeOverlay: (catalog: Catalog) => void
 }
 type Catalog = { hide: () => void }
+type TargetCatalog = Catalog & { addSources: (sources: unknown[]) => void }
 
 const catalogs = {
   gaia: { id: 'I/355/gaiadr3', name: 'Gaia DR3', color: '#5de5ff' },
@@ -25,6 +26,8 @@ type AladinApi = {
     cooFrame: string
     showCooGridControl: boolean
   }) => Atlas
+  catalog: (options: { name: string; color: string; sourceSize: number; shape: string }) => TargetCatalog
+  source: (ra: number, dec: number) => unknown
   catalogFromVizieR: (id: string, target: Coordinates, radius: number,
     options: { name: string; color: string; sourceSize: number; limit: number; onClick: string },
     callback: (sources: unknown[]) => void, onError: () => void) => Catalog
@@ -48,13 +51,15 @@ function loadAladin() {
   return loading
 }
 
-export function SkyMap({ coords, onSearch }: {
+export function SkyMap({ coords, searchVersion, onSearch }: {
   coords: Coordinates
+  searchVersion: number
   onSearch: (coords: Coordinates) => void
 }) {
   const container = useRef<HTMLDivElement>(null)
   const atlas = useRef<Atlas | null>(null)
   const api = useRef<AladinApi | null>(null)
+  const targetMarker = useRef<TargetCatalog | null>(null)
   const layers = useRef<Partial<Record<CatalogKey, Catalog>>>({})
   const [messages, setMessages] = useState<Partial<Record<CatalogKey, string>>>({})
   const [attempt, setAttempt] = useState(0)
@@ -80,15 +85,22 @@ export function SkyMap({ coords, onSearch }: {
 
   const { ra, dec } = coords
   useEffect(() => {
-    if (status !== 'ready') return
-    atlas.current?.gotoRaDec(ra, dec)
+    const view = atlas.current
+    const aladin = api.current
+    if (status !== 'ready' || !view || !aladin) return
+    view.gotoRaDec(ra, dec)
     for (const layer of Object.values(layers.current)) {
       layer.hide()
       atlas.current?.removeOverlay(layer)
     }
     layers.current = {}
     setMessages({})
-  }, [status, ra, dec])
+    if (targetMarker.current) view.removeOverlay(targetMarker.current)
+    const marker = aladin.catalog({ name: 'Selected coordinates', color: '#a0e8de', sourceSize: 20, shape: 'circle' })
+    marker.addSources([aladin.source(ra, dec)])
+    view.addCatalog(marker)
+    targetMarker.current = marker
+  }, [status, ra, dec, searchVersion])
 
   function toggleCatalog(key: CatalogKey) {
     const view = atlas.current
@@ -121,10 +133,11 @@ export function SkyMap({ coords, onSearch }: {
     }, 15000)
   }
 
-  return <section className="panel sky-map" aria-labelledby="sky-map-title">
+  return <section id="aladin-sky-map" tabIndex={-1} className="panel sky-map" aria-labelledby="sky-map-title">
     <div className="viewer-head">
       <h2 id="sky-map-title">Aladin Lite sky map</h2>
     </div>
+    <p>The teal circle marks the selected sky position. RA {ra}°, Dec {dec}° (ICRS).</p>
     <p>DSS optical imagery with optional Gaia DR3 and AllWISE source markers. Load overlays after choosing a map field. Catalog positions are shown at their published coordinates.</p>
       <div ref={container} className="aladin-map" hidden={status === 'error'} aria-label="Interactive sky map" />
       {status === 'loading' && <p role="status">Loading sky map…</p>}
