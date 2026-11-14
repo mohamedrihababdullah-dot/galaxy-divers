@@ -29,7 +29,7 @@ function SiteHeader() {
       <span className="brand-copy"><strong>Galaxy Divers</strong><small>Dive into · Discover · Explore</small></span>
     </a>
     <nav className="site-nav" aria-label="Main navigation">
-      <a className="nav-home" href={`${home}#home`}><span aria-hidden="true">⌂</span> Home</a>
+      <a href={`${home}#home`} aria-current={isSpherexPage ? undefined : 'page'}><span aria-hidden="true">⌂</span> Home</a>
       <a href={`${home}#explorer`}><span aria-hidden="true">♄</span> Explore</a>
       <a href="/spherex/" aria-current={isSpherexPage ? 'page' : undefined}><span aria-hidden="true">✧</span> SPHEREx</a>
       <a href={`${home}#planet-x`}><span aria-hidden="true">ⓘ</span> Planet X</a>
