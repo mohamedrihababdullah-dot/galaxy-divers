@@ -201,6 +201,7 @@ export function SpherexImageSequence({ directory, target, overlayDirectory, hide
     {target === "Epsilon Indi B" && <p>The ring follows the predicted position of the brown dwarf pair.
       Blink compares appearances across visits. The expected shift over a year is under one SPHEREx pixel.
       <a href="https://www.esa.int/gsp/ACT/doc/ARI/ARI%20Study%20Report/ACT-RPT-MAD-ARI-03-4102b-InterstellarTravels-Padova.pdf">Published proper motion</a></p>}
+    {target === "R Draconis" && <p>R Draconis is a Mira variable. Use Blink to compare its appearance across visits. Individual frames have their own display stretch, so this view gives a visual comparison of brightness. <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=R+Dra">SIMBAD entry</a></p>}
     {target === "RW Aurigae" && <>
       <p>Blink compares the observed brightness and appearance across visits. The expected motion over these dates is less than 0.005 SPHEREx pixels.</p>
       <RwAurigaeMotion />

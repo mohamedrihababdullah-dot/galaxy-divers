@@ -33,6 +33,13 @@
       "dec": -56.806,
       "frames": [],
       "imageDirectory": "/data/epsilon-indi-b/"
+    },
+    {
+      "target": "R Draconis",
+      "ra": 248.167611,
+      "dec": 66.754979,
+      "frames": [],
+      "imageDirectory": "/data/r-draconis/"
     }
   ]
 }
