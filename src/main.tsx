@@ -31,7 +31,7 @@ function SiteHeader() {
     <nav className="site-nav" aria-label="Main navigation">
       <a className="nav-home" href={`${home}#home`}><span aria-hidden="true">⌂</span> Home</a>
       <a href={`${home}#explorer`}><span aria-hidden="true">♄</span> Explore</a>
-      <a href="/spherex" aria-current={isSpherexPage ? 'page' : undefined}><span aria-hidden="true">✧</span> SPHEREx</a>
+      <a href="/spherex/" aria-current={isSpherexPage ? 'page' : undefined}><span aria-hidden="true">✧</span> SPHEREx</a>
       <a href={`${home}#planet-x`}><span aria-hidden="true">ⓘ</span> Planet X</a>
       <a href={`${home}#about`}><span aria-hidden="true">ⓘ</span> About</a>
     </nav>
