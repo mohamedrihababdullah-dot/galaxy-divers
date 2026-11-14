@@ -280,3 +280,9 @@ select { width: 100%; padding: 8px; border: 1px solid var(--border); border-radi
   html { scroll-behavior: auto; }
   .diver, .dive-trail { animation: none; }
 }
+
+.spherex-sequence-frame { position: relative; aspect-ratio: 1; }
+.spherex-sequence-frame canvas { display: block; width: 100%; height: 100%; }
+.spherex-sequence-frame > p { padding: 1rem; }
+.spherex-star-marker { position: absolute; width: 30px; height: 30px; transform: translate(-50%, -50%); border: 2px solid var(--accent); border-radius: 50%; pointer-events: none; }
+.spherex-star-marker span { position: absolute; left: calc(100% + 6px); top: -4px; padding: 2px 4px; border-radius: 4px; background: #060a12; color: var(--accent); font-size: 12px; white-space: nowrap; }

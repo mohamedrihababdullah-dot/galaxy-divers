@@ -7,6 +7,7 @@ import { SkyMap } from './SkyMap'
 import { SkyGuide } from './SkyGuide'
 import { ArchiveSearch } from './ArchiveSearch'
 import { GaiaComparison } from './TelescopeComparison'
+import { SpherexImageSequence } from './SpherexImageSequence'
 import { WiseImageSequence } from './WiseImageSequence'
 import { ObservationUpload, saveObservation, type UploadedObservation } from './ObservationUpload'
 import { demoCube, parseCoordinates } from './studio-data'
@@ -77,6 +78,7 @@ function App() {
   const cubeUrl = sequence && (spectrum || selectedField?.cube || sequence.cube)
   const isBarnard = !upload && sequence?.target === 'Barnard’s Star'
   const showWiseImages = isBarnard && product === 'images'
+  const showSpherexImages = isBarnard && product === 'spherex-images'
 
   useEffect(() => {
     if (query.has('ra') || query.has('dec') || location.hash === '#explorer') {
@@ -250,13 +252,14 @@ function App() {
           </div>
           {!upload && !demoTarget && sequence && (sequence.spectrum || sequence.fields?.length) && <div className="dataset-controls">
             {sequence.spectrum && <label>View
-              <select value={showWiseImages ? 'images' : spectrum ? 'spectrum' : 'epochs'} onChange={event => changeDataset('product', event.target.value)}>
+              <select value={showWiseImages ? 'images' : showSpherexImages ? 'spherex-images' : spectrum ? 'spectrum' : 'epochs'} onChange={event => changeDataset('product', event.target.value)}>
                 {isBarnard && <option value="images">WISE · Wide-field images</option>}
+                {isBarnard && <option value="spherex-images">SPHEREx · 18 wide-field images</option>}
                 {sequence.cube && <option value="epochs">SPHEREx · Epoch analysis</option>}
                 <option value="spectrum">DR1 · 102-channel mosaic</option>
               </select>
             </label>}
-            {!showWiseImages && !spectrum && !!sequence.fields?.length && <label>Download field
+            {!showWiseImages && !showSpherexImages && !spectrum && !!sequence.fields?.length && <label>Download field
               <select value={selectedField ? selectedField.id : ''} onChange={event => changeDataset('field', event.target.value)}>
                 <option value="">Standard field · 2.70′</option>
                 {sequence.fields.map(item => <option key={item.id} value={item.id}>{item.label}</option>)}
@@ -264,6 +267,7 @@ function App() {
             </label>}
           </div>}
           {showWiseImages ? <WiseImageSequence key={viewKey} />
+            : showSpherexImages ? <SpherexImageSequence key={viewKey} />
             : upload ? <Studio key={viewKey} cube={upload.cube} target={upload.target} coords={upload.coords} zoom={zoom} onZoom={changeZoom} local />
             : demoData ? <Studio key={viewKey} cube={demoData} target={demoTarget} coords={demoPreset} zoom={zoom} onZoom={changeZoom} simulated />
             : sequence && cubeUrl ? <ObservationStudio key={`${viewKey}:${cubeUrl}`} url={cubeUrl} target={sequence.target} coords={sequence} zoom={zoom} onZoom={changeZoom} field={selectedField ? selectedField.id : 'standard'} />
