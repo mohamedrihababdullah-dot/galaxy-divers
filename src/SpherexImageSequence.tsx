@@ -198,6 +198,9 @@ export function SpherexImageSequence({ directory, target, overlayDirectory, hide
         {frames.map((item, index) => <option key={item.image} value={index}>{item.date.slice(0, 10)}</option>)}
       </select></label>}
     </div>
+    {target === "Epsilon Indi B" && <p>The ring follows the predicted position of the brown dwarf pair.
+      Blink compares appearances across visits. The expected shift over a year is under one SPHEREx pixel.
+      <a href="https://www.esa.int/gsp/ACT/doc/ARI/ARI%20Study%20Report/ACT-RPT-MAD-ARI-03-4102b-InterstellarTravels-Padova.pdf">Published proper motion</a></p>}
     {target === "RW Aurigae" && <>
       <p>Blink compares the observed brightness and appearance across visits. The expected motion over these dates is less than 0.005 SPHEREx pixels.</p>
       <RwAurigaeMotion />

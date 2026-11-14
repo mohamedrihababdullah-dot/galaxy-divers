@@ -83,8 +83,7 @@ function App() {
   const showWiseImages = isBarnard && product === 'images'
   const imageDirectory = !upload && !demoTarget && sequence && sequence.imageDirectory
   const isWise0855 = sequence?.target === 'WISE 0855'
-  const isRwAurigae = sequence?.target === 'RW Aurigae'
-  const hasOverlays = isWise0855 || isRwAurigae
+  const hasOverlays = Boolean(imageDirectory && !isBarnard)
   const showProvidedImages = isWise0855 && product === 'provided-images'
   const showSpherexImages = (!isBarnard || product === 'spherex-images') && imageDirectory
 
@@ -240,7 +239,7 @@ function App() {
                 else setShowGaia(value => !value)
               }}>{label}</button>)}
           </div>
-          <p>{isBarnard ? 'Show Gaia’s motion plot or switch to the WISE image sequence.' : hasOverlays ? 'Overlay Gaia DR3 sources or blend in the AllWISE W2 image.' : 'Select Barnard’s Star, WISE 0855 or RW Aurigae to compare telescopes.'}</p>
+          <p>{isBarnard ? 'Show Gaia’s motion plot or switch to the WISE image sequence.' : hasOverlays ? 'Overlay Gaia DR3 sources or blend in the AllWISE W2 image.' : 'Select a target with telescope comparisons.'}</p>
         </aside>
         </div>
         <section id="observation-viewer" className="panel viewer" aria-label="Observation viewer">

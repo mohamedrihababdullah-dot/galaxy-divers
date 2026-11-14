@@ -26,6 +26,13 @@
       "dec": 30.4014380556,
       "frames": [],
       "imageDirectory": "/data/rw-aurigae/"
+    },
+    {
+      "target": "Epsilon Indi B",
+      "ra": 331.095,
+      "dec": -56.806,
+      "frames": [],
+      "imageDirectory": "/data/epsilon-indi-b/"
     }
   ]
 }
