@@ -9,7 +9,11 @@ function loadFrame(directory: string, frame: Frame): Promise<LoadedFrame> {
   return imageElement.decode().then(() => ({ ...frame, imageElement }))
 }
 
-export function SpherexImageSequence({ directory, target, hideMarker = false }: { directory: string; target: string; hideMarker?: boolean }) {
+export function SpherexImageSequence({ directory, target, hideMarker = false, gaiaOverlay = false, wiseOverlay = false }: { directory: string; target: string; hideMarker?: boolean; gaiaOverlay?: boolean; wiseOverlay?: boolean }) {
+  const [gaiaSources, setGaiaSources] = useState<[number, number, number][]>([])
+  const [wiseImage, setWiseImage] = useState<HTMLImageElement>()
+  const [gaiaError, setGaiaError] = useState(false)
+  const [wiseError, setWiseError] = useState(false)
   const [manifest, setManifest] = useState<Frame[]>([])
   const [frames, setFrames] = useState<LoadedFrame[]>([])
   const [error, setError] = useState('')
@@ -25,6 +29,31 @@ export function SpherexImageSequence({ directory, target, hideMarker = false }: 
   const markerPosition = hideMarker ? undefined : current?.star
   const baseline = frames[reference]
   const size = current?.imageElement.naturalWidth ?? 840
+
+  useEffect(() => {
+    if (!gaiaOverlay || gaiaSources.length) return
+    const controller = new AbortController()
+    setGaiaError(false)
+    fetch('/data/wise-0855/gaia-overlay.json', { signal: controller.signal })
+      .then(response => {
+        if (!response.ok) throw new Error('Gaia catalog unavailable')
+        return response.json()
+      })
+      .then(setGaiaSources)
+      .catch(() => { if (!controller.signal.aborted) setGaiaError(true) })
+    return () => controller.abort()
+  }, [gaiaOverlay, gaiaSources.length])
+
+  useEffect(() => {
+    if (!wiseOverlay || wiseImage) return
+    let active = true
+    setWiseError(false)
+    const image = new Image()
+    image.src = '/data/wise-0855/allwise-w2.webp'
+    image.decode().then(() => { if (active) setWiseImage(image) })
+      .catch(() => { if (active) setWiseError(true) })
+    return () => { active = false }
+  }, [wiseOverlay, wiseImage])
 
   useEffect(() => {
     const controller = new AbortController()
@@ -79,7 +108,27 @@ export function SpherexImageSequence({ directory, target, hideMarker = false }: 
     } else {
       draw(current.imageElement)
     }
-  }, [current, baseline, difference, zoom, size])
+    if (wiseOverlay && wiseImage) {
+      const offset = (wiseImage.naturalWidth - width) / 2
+      context.globalAlpha = 0.55
+      context.drawImage(wiseImage, offset, offset, width, width, 0, 0, size, size)
+      context.globalAlpha = 1
+    }
+    if (gaiaOverlay) {
+      context.strokeStyle = '#5de5ff'
+      context.lineWidth = size / 650
+      context.beginPath()
+      for (const [east, south, magnitude] of gaiaSources) {
+        const x = size / 2 + east * zoom
+        const y = size / 2 + south * zoom
+        if (x < 0 || x > size || y < 0 || y > size) continue
+        const radius = Math.max(1.5, (16 - magnitude) / 2)
+        context.moveTo(x + radius, y)
+        context.arc(x, y, radius, 0, 2 * Math.PI)
+      }
+      context.stroke()
+    }
+  }, [current, baseline, difference, zoom, size, gaiaOverlay, gaiaSources, wiseOverlay, wiseImage])
 
   return <div className="wise-sequence">
     <div className="dataset-controls studio-modes">
@@ -129,6 +178,8 @@ export function SpherexImageSequence({ directory, target, hideMarker = false }: 
         {frames.map((item, index) => <option key={item.image} value={index}>{item.date.slice(0, 10)}</option>)}
       </select></label>}
     </div>
+    {gaiaOverlay && <p role="status">{gaiaError ? 'Gaia DR3 could not load. Toggle Gaia to retry.' : gaiaSources.length ? 'Cyan circles show Gaia DR3 catalog sources at their published positions.' : 'Loading Gaia DR3 sources…'}</p>}
+    {wiseOverlay && <p role="status">{wiseError ? 'WISE could not load. Toggle WISE to retry.' : wiseImage ? 'AllWISE W2 (4.6 µm) image blended over the SPHEREx view. NASA/IPAC, via CDS.' : 'Loading AllWISE W2…'}</p>}
     {difference
       ? <p>Cyan shows brighter pixels in the comparison image and red shows brighter pixels in the reference. This view subtracts display brightness. Saturation, wavelength and exposure differences can also leave residuals.</p>
       : <p>Press Play to blink through the observation dates. {markerPosition && "Use a narrower field to compare the marked star against its neighbors. The ring follows the position predicted from Gaia DR3."}</p>}
