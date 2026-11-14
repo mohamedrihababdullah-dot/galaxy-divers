@@ -27,7 +27,7 @@ export function AboutSpherex() {
       <h2 id="science-title">What the survey can tell us</h2>
       <p>The spectra help astronomers estimate distances to galaxies and map how they are spread through space. That pattern carries clues about the early universe. Closer to home, SPHEREx searches for the spectral signatures of water ice and other frozen molecules in clouds where stars and planets form.</p>
       <p>Caltech’s Infrared Science Archive publishes the mission’s observations, including calibrated images and spectral cubes. In Galaxy Divers, you can compare visits to Barnard’s Star and see how the field changes over time.</p>
-      <a href="/?ra=269.444&dec=4.768&product=epochs#explorer">Open the SPHEREx Studio →</a>
+      <a href="/?ra=269.444&dec=4.768&product=spherex-images#explorer">Open the SPHEREx Studio →</a>
     </section>
   </main>
 }

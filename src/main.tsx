@@ -56,7 +56,7 @@ function App() {
   const [zoom, setZoom] = useState(() => /^[1-5]$/.test(query.get('zoom') ?? '') ? Number(query.get('zoom')) : 1)
   const [viewKey, setViewKey] = useState(0)
   const [showGaia, setShowGaia] = useState(false)
-  const [product, setProduct] = useState(query.get('product') ?? (query.has('x') || query.has('y') ? 'epochs' : 'images'))
+  const [product, setProduct] = useState(query.get('product') ?? (query.has('x') || query.has('y') ? 'epochs' : 'spherex-images'))
   const [field, setField] = useState(query.get('field') ?? '')
   const [embed] = useState(query.get('embed') === '1')
   const demoData = useMemo(() => demoTarget ? demoCube(demoTarget) : null, [demoTarget])
@@ -103,7 +103,7 @@ function App() {
     return () => window.clearInterval(timer)
   }, [playing, count])
 
-  function select(coords: typeof demo, target = '', mode?: 'blink' | 'difference', initialField = '') {
+  function select(coords: typeof demo, target = '', mode?: 'blink' | 'difference') {
     setUpload(null)
     setDemoTarget(target)
     setViewKey(value => value + 1)
@@ -112,17 +112,13 @@ function App() {
     setFrame(0)
     setPlaying(false)
     setError('')
-    setProduct('images')
-    setField(initialField)
+    setProduct('spherex-images')
+    setField('')
     const url = new URL(location.href)
     url.search = new URLSearchParams({
-      ra: String(coords.ra), dec: String(coords.dec), zoom: String(initialField ? 1 : zoom), ...(target ? { demo: target } : {}),
+      ra: String(coords.ra), dec: String(coords.dec), zoom: String(zoom), ...(target ? { demo: target } : {}),
     }).toString()
     if (mode) url.searchParams.set('mode', mode)
-    if (initialField) {
-      url.searchParams.set('field', initialField)
-      setZoom(1)
-    }
     if (embed) url.searchParams.set('embed', '1')
     url.hash = 'explorer'
     setRa(String(coords.ra))
@@ -209,10 +205,7 @@ function App() {
               const target = event.target.value
               const available = sequences.find(item => item.target === target && (item.cube || item.spectrum || item.frames.length))
               const preset = presets.find(item => item.target === target)
-              if (available) {
-                const barnard = available.target === 'Barnard’s Star'
-                select(available, '', barnard ? 'blink' : undefined, barnard ? 'surroundings' : '')
-              }
+              if (available) select(available)
               else if (preset) select(preset, target)
             }}>
               <option value="" disabled>Choose a target</option>
@@ -232,7 +225,7 @@ function App() {
             {telescopes.map(({ id, label }) => <button key={id} type="button"
               disabled={!isBarnard} aria-pressed={id === 'wise' ? showWiseImages : isBarnard && showGaia}
               aria-controls={id === 'wise' ? 'observation-viewer' : 'telescope-comparisons'} onClick={() => {
-                if (id === 'wise') changeDataset('product', showWiseImages ? 'epochs' : 'images')
+                if (id === 'wise') changeDataset('product', showWiseImages ? 'spherex-images' : 'images')
                 else setShowGaia(value => !value)
               }}>{label}</button>)}
           </div>
@@ -255,7 +248,7 @@ function App() {
               <select value={showWiseImages ? 'images' : showSpherexImages ? 'spherex-images' : spectrum ? 'spectrum' : 'epochs'} onChange={event => changeDataset('product', event.target.value)}>
                 {isBarnard && <option value="images">WISE · Wide-field images</option>}
                 {isBarnard && <option value="spherex-images">SPHEREx · 18 wide-field images</option>}
-                {sequence.cube && <option value="epochs">SPHEREx · Epoch analysis</option>}
+                {sequence.cube && <option value="epochs">SPHEREx · FITS close-up analysis</option>}
                 <option value="spectrum">DR1 · 102-channel mosaic</option>
               </select>
             </label>}
