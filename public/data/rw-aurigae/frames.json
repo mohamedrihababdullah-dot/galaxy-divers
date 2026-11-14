@@ -1,0 +1,218 @@
+[
+  {
+    "image": "RW_Aurigae_Detector_1_2025-09-03.webp",
+    "original": "RW_Aurigae_Detector_1_2025-09-03.png",
+    "detector": 1,
+    "date": "2025-09-03T17:28:50.290Z",
+    "source": "https://irsa.ipac.caltech.edu/ibe/data/spherex/dr1/level2/2025W36_1A/l2b-v27-2026-232/1/level2_2025W36_1A_0606_4D1_spx_l2b-v27-2026-232.fits",
+    "archiveId": "ivo://irsa.ipac/spherex_dr1?2025W36_1A_0606_4/D1",
+    "star": [
+      114.63772195889489,
+      114.51178692952568
+    ]
+  },
+  {
+    "image": "RW_Aurigae_Detector_1_2026-03-04.webp",
+    "original": "RW_Aurigae_Detector_1_2026-03-04.png",
+    "detector": 1,
+    "date": "2026-03-04T07:58:55.867Z",
+    "source": "https://irsa.ipac.caltech.edu/ibe/data/spherex/dr1/level2/2026W10_1A/l2b-v27-2026-229/1/level2_2026W10_1A_0445_3D1_spx_l2b-v27-2026-229.fits",
+    "archiveId": "ivo://irsa.ipac/spherex_dr1?2026W10_1A_0445_3/D1",
+    "star": [
+      114.63772195889489,
+      114.51178692952568
+    ]
+  },
+  {
+    "image": "RW_Aurigae_Detector_1_2026-09-09.webp",
+    "original": "RW_Aurigae_Detector_1_2026-09-09.png",
+    "detector": 1,
+    "date": "2026-09-09T00:33:38.643Z",
+    "source": "https://irsa.ipac.caltech.edu/ibe/data/spherex/qr3/level2/2026W37_1A/l2b-v27-2026-255/1/level2_2026W37_1A_0365_2D1_spx_l2b-v27-2026-255.fits",
+    "archiveId": "ivo://irsa.ipac/spherex_qr3?2026W37_1A_0365_2/D1",
+    "star": [
+      114.63772195889489,
+      114.51178692952568
+    ]
+  },
+  {
+    "image": "RW_Aurigae_Detector_2_2025-09-09.webp",
+    "original": "RW_Aurigae_Detector_2_2025-09-09.png",
+    "detector": 2,
+    "date": "2025-09-09T21:47:57.284Z",
+    "source": "https://irsa.ipac.caltech.edu/ibe/data/spherex/dr1/level2/2025W37_1A/l2b-v27-2026-235/2/level2_2025W37_1A_0379_2D2_spx_l2b-v27-2026-235.fits",
+    "archiveId": "ivo://irsa.ipac/spherex_dr1?2025W37_1A_0379_2/D2",
+    "star": [
+      114.63772195889489,
+      114.51178692952568
+    ]
+  },
+  {
+    "image": "RW_Aurigae_Detector_2_2026-03-01.webp",
+    "original": "RW_Aurigae_Detector_2_2026-03-01.png",
+    "detector": 2,
+    "date": "2026-03-01T05:02:11.285Z",
+    "source": "https://irsa.ipac.caltech.edu/ibe/data/spherex/dr1/level2/2026W09_2A/l2b-v27-2026-229/2/level2_2026W09_2A_0503_4D2_spx_l2b-v27-2026-229.fits",
+    "archiveId": "ivo://irsa.ipac/spherex_dr1?2026W09_2A_0503_4/D2",
+    "star": [
+      114.63772195889489,
+      114.51178692952568
+    ]
+  },
+  {
+    "image": "RW_Aurigae_Detector_2_2026-09-14.webp",
+    "original": "RW_Aurigae_Detector_2_2026-09-14.png",
+    "detector": 2,
+    "date": "2026-09-14T07:41:56.924Z",
+    "source": "https://irsa.ipac.caltech.edu/ibe/data/spherex/qr3/level2/2026W38_1A/l2b-v27-2026-261/2/level2_2026W38_1A_0064_4D2_spx_l2b-v27-2026-261.fits",
+    "archiveId": "ivo://irsa.ipac/spherex_qr3?2026W38_1A_0064_4/D2",
+    "star": [
+      114.63772195889489,
+      114.51178692952568
+    ]
+  },
+  {
+    "image": "RW_Aurigae_Detector_3_2025-09-18.webp",
+    "original": "RW_Aurigae_Detector_3_2025-09-18.png",
+    "detector": 3,
+    "date": "2025-09-18T14:26:34.417Z",
+    "source": "https://irsa.ipac.caltech.edu/ibe/data/spherex/dr1/level2/2025W38_2C/l2b-v27-2026-237/3/level2_2025W38_2C_0023_3D3_spx_l2b-v27-2026-237.fits",
+    "archiveId": "ivo://irsa.ipac/spherex_dr1?2025W38_2C_0023_3/D3",
+    "star": [
+      114.63772195889489,
+      114.51178692952568
+    ]
+  },
+  {
+    "image": "RW_Aurigae_Detector_3_2026-02-20.webp",
+    "original": "RW_Aurigae_Detector_3_2026-02-20.png",
+    "detector": 3,
+    "date": "2026-02-20T17:20:32.679Z",
+    "source": "https://irsa.ipac.caltech.edu/ibe/data/spherex/dr1/level2/2026W08_2A/l2b-v27-2026-227/3/level2_2026W08_2A_0233_3D3_spx_l2b-v27-2026-227.fits",
+    "archiveId": "ivo://irsa.ipac/spherex_dr1?2026W08_2A_0233_3/D3",
+    "star": [
+      114.63772195889489,
+      114.51178692952568
+    ]
+  },
+  {
+    "image": "RW_Aurigae_Detector_3_2026-09-16.webp",
+    "original": "RW_Aurigae_Detector_3_2026-09-16.png",
+    "detector": 3,
+    "date": "2026-09-16T06:50:29.796Z",
+    "source": "https://irsa.ipac.caltech.edu/ibe/data/spherex/qr3/level2/2026W38_1A/l2b-v27-2026-261/3/level2_2026W38_1A_0435_2D3_spx_l2b-v27-2026-261.fits",
+    "archiveId": "ivo://irsa.ipac/spherex_qr3?2026W38_1A_0435_2/D3",
+    "star": [
+      114.63772195889489,
+      114.51178692952568
+    ]
+  },
+  {
+    "image": "RW_Aurigae_Detector_4_2025-09-03.webp",
+    "original": "RW_Aurigae_Detector_4_2025-09-03.png",
+    "detector": 4,
+    "date": "2025-09-03T17:28:50.290Z",
+    "source": "https://irsa.ipac.caltech.edu/ibe/data/spherex/dr1/level2/2025W36_1A/l2b-v27-2026-232/4/level2_2025W36_1A_0606_4D4_spx_l2b-v27-2026-232.fits",
+    "archiveId": "ivo://irsa.ipac/spherex_dr1?2025W36_1A_0606_4/D4",
+    "star": [
+      114.63772195889489,
+      114.51178692952568
+    ]
+  },
+  {
+    "image": "RW_Aurigae_Detector_4_2026-03-04.webp",
+    "original": "RW_Aurigae_Detector_4_2026-03-04.png",
+    "detector": 4,
+    "date": "2026-03-04T07:58:55.868Z",
+    "source": "https://irsa.ipac.caltech.edu/ibe/data/spherex/dr1/level2/2026W10_1A/l2b-v27-2026-229/4/level2_2026W10_1A_0445_3D4_spx_l2b-v27-2026-229.fits",
+    "archiveId": "ivo://irsa.ipac/spherex_dr1?2026W10_1A_0445_3/D4",
+    "star": [
+      114.63772195889489,
+      114.51178692952568
+    ]
+  },
+  {
+    "image": "RW_Aurigae_Detector_4_2026-09-09.webp",
+    "original": "RW_Aurigae_Detector_4_2026-09-09.png",
+    "detector": 4,
+    "date": "2026-09-09T00:33:38.644Z",
+    "source": "https://irsa.ipac.caltech.edu/ibe/data/spherex/qr3/level2/2026W37_1A/l2b-v27-2026-255/4/level2_2026W37_1A_0365_2D4_spx_l2b-v27-2026-255.fits",
+    "archiveId": "ivo://irsa.ipac/spherex_qr3?2026W37_1A_0365_2/D4",
+    "star": [
+      114.63772195889489,
+      114.51178692952568
+    ]
+  },
+  {
+    "image": "RW_Aurigae_Detector_5_2025-09-09.webp",
+    "original": "RW_Aurigae_Detector_5_2025-09-09.png",
+    "detector": 5,
+    "date": "2025-09-09T21:47:57.284Z",
+    "source": "https://irsa.ipac.caltech.edu/ibe/data/spherex/dr1/level2/2025W37_1A/l2b-v27-2026-235/5/level2_2025W37_1A_0379_2D5_spx_l2b-v27-2026-235.fits",
+    "archiveId": "ivo://irsa.ipac/spherex_dr1?2025W37_1A_0379_2/D5",
+    "star": [
+      114.63772195889489,
+      114.51178692952568
+    ]
+  },
+  {
+    "image": "RW_Aurigae_Detector_5_2026-03-01.webp",
+    "original": "RW_Aurigae_Detector_5_2026-03-01.png",
+    "detector": 5,
+    "date": "2026-03-01T05:00:02.355Z",
+    "source": "https://irsa.ipac.caltech.edu/ibe/data/spherex/dr1/level2/2026W09_2A/l2b-v27-2026-229/5/level2_2026W09_2A_0503_3D5_spx_l2b-v27-2026-229.fits",
+    "archiveId": "ivo://irsa.ipac/spherex_dr1?2026W09_2A_0503_3/D5",
+    "star": [
+      114.63772195889489,
+      114.51178692952568
+    ]
+  },
+  {
+    "image": "RW_Aurigae_Detector_5_2026-09-14.webp",
+    "original": "RW_Aurigae_Detector_5_2026-09-14.png",
+    "detector": 5,
+    "date": "2026-09-14T07:41:56.924Z",
+    "source": "https://irsa.ipac.caltech.edu/ibe/data/spherex/qr3/level2/2026W38_1A/l2b-v27-2026-261/5/level2_2026W38_1A_0064_4D5_spx_l2b-v27-2026-261.fits",
+    "archiveId": "ivo://irsa.ipac/spherex_qr3?2026W38_1A_0064_4/D5",
+    "star": [
+      114.63772195889489,
+      114.51178692952568
+    ]
+  },
+  {
+    "image": "RW_Aurigae_Detector_6_2025-09-18.webp",
+    "original": "RW_Aurigae_Detector_6_2025-09-18.png",
+    "detector": 6,
+    "date": "2025-09-18T14:26:34.418Z",
+    "source": "https://irsa.ipac.caltech.edu/ibe/data/spherex/dr1/level2/2025W38_2C/l2b-v27-2026-237/6/level2_2025W38_2C_0023_3D6_spx_l2b-v27-2026-237.fits",
+    "archiveId": "ivo://irsa.ipac/spherex_dr1?2025W38_2C_0023_3/D6",
+    "star": [
+      114.63772195889489,
+      114.51178692952568
+    ]
+  },
+  {
+    "image": "RW_Aurigae_Detector_6_2026-02-20.webp",
+    "original": "RW_Aurigae_Detector_6_2026-02-20.png",
+    "detector": 6,
+    "date": "2026-02-20T17:20:32.679Z",
+    "source": "https://irsa.ipac.caltech.edu/ibe/data/spherex/dr1/level2/2026W08_2A/l2b-v27-2026-227/6/level2_2026W08_2A_0233_3D6_spx_l2b-v27-2026-227.fits",
+    "archiveId": "ivo://irsa.ipac/spherex_dr1?2026W08_2A_0233_3/D6",
+    "star": [
+      114.63772195889489,
+      114.51178692952568
+    ]
+  },
+  {
+    "image": "RW_Aurigae_Detector_6_2026-09-16.webp",
+    "original": "RW_Aurigae_Detector_6_2026-09-16.png",
+    "detector": 6,
+    "date": "2026-09-16T06:48:20.865Z",
+    "source": "https://irsa.ipac.caltech.edu/ibe/data/spherex/qr3/level2/2026W38_1A/l2b-v27-2026-261/6/level2_2026W38_1A_0435_1D6_spx_l2b-v27-2026-261.fits",
+    "archiveId": "ivo://irsa.ipac/spherex_qr3?2026W38_1A_0435_1/D6",
+    "star": [
+      114.63772195889489,
+      114.51178692952568
+    ]
+  }
+]

@@ -9,7 +9,27 @@ function loadFrame(directory: string, frame: Frame): Promise<LoadedFrame> {
   return imageElement.decode().then(() => ({ ...frame, imageElement }))
 }
 
-export function SpherexImageSequence({ directory, target, hideMarker = false, gaiaOverlay = false, wiseOverlay = false }: { directory: string; target: string; hideMarker?: boolean; gaiaOverlay?: boolean; wiseOverlay?: boolean }) {
+function RwAurigaeMotion() {
+  const [year, setYear] = useState(2026)
+  // Gaia DR3 source 156430822114424576. RA motion includes cos(dec).
+  const elapsed = year - 2016
+  const east = 2.640643 * elapsed
+  const south = 27.397583 * elapsed
+  const distance = Math.hypot(east, south)
+
+  return <details className="rw-motion">
+    <summary>RW Aurigae A proper motion · Gaia DR3</summary>
+    <div className="rw-motion-plot" role="img" aria-label={`Projected motion in ${year}: ${east.toFixed(1)} milliarcseconds east and ${south.toFixed(1)} milliarcseconds south of 2016`}>
+      <span className="rw-motion-origin" style={{ left: '50%', top: '14%' }} />
+      <span className="rw-motion-point" style={{ left: `calc(50% - ${east * .24}px)`, top: `calc(14% + ${south * .24}px)` }} />
+    </div>
+    <label>Year {year} <input type="range" min={2016} max={2036} value={year}
+      onChange={event => setYear(Number(event.target.value))} /></label>
+    <p>Projected shift since 2016 · {distance.toFixed(1)} mas. The hollow circle marks 2016. North is up and east is left. This magnified view uses the measured proper motion. <a href="https://gea.esac.esa.int/archive/">Gaia DR3</a></p>
+  </details>
+}
+
+export function SpherexImageSequence({ directory, target, overlayDirectory, hideMarker = false, gaiaOverlay = false, wiseOverlay = false }: { directory: string; target: string; overlayDirectory?: string; hideMarker?: boolean; gaiaOverlay?: boolean; wiseOverlay?: boolean }) {
   const [gaiaSources, setGaiaSources] = useState<[number, number, number][]>([])
   const [wiseImage, setWiseImage] = useState<HTMLImageElement>()
   const [gaiaError, setGaiaError] = useState(false)
@@ -31,10 +51,10 @@ export function SpherexImageSequence({ directory, target, hideMarker = false, ga
   const size = current?.imageElement.naturalWidth ?? 840
 
   useEffect(() => {
-    if (!gaiaOverlay || gaiaSources.length) return
+    if (!overlayDirectory || !gaiaOverlay || gaiaSources.length) return
     const controller = new AbortController()
     setGaiaError(false)
-    fetch('/data/wise-0855/gaia-overlay.json', { signal: controller.signal })
+    fetch(overlayDirectory + 'gaia-overlay.json', { signal: controller.signal })
       .then(response => {
         if (!response.ok) throw new Error('Gaia catalog unavailable')
         return response.json()
@@ -42,18 +62,18 @@ export function SpherexImageSequence({ directory, target, hideMarker = false, ga
       .then(setGaiaSources)
       .catch(() => { if (!controller.signal.aborted) setGaiaError(true) })
     return () => controller.abort()
-  }, [gaiaOverlay, gaiaSources.length])
+  }, [overlayDirectory, gaiaOverlay, gaiaSources.length])
 
   useEffect(() => {
-    if (!wiseOverlay || wiseImage) return
+    if (!overlayDirectory || !wiseOverlay || wiseImage) return
     let active = true
     setWiseError(false)
     const image = new Image()
-    image.src = '/data/wise-0855/allwise-w2.webp'
+    image.src = overlayDirectory + 'allwise-w2.webp'
     image.decode().then(() => { if (active) setWiseImage(image) })
       .catch(() => { if (active) setWiseError(true) })
     return () => { active = false }
-  }, [wiseOverlay, wiseImage])
+  }, [overlayDirectory, wiseOverlay, wiseImage])
 
   useEffect(() => {
     const controller = new AbortController()
@@ -178,11 +198,15 @@ export function SpherexImageSequence({ directory, target, hideMarker = false, ga
         {frames.map((item, index) => <option key={item.image} value={index}>{item.date.slice(0, 10)}</option>)}
       </select></label>}
     </div>
+    {target === "RW Aurigae" && <>
+      <p>Blink compares the observed brightness and appearance across visits. The expected motion over these dates is less than 0.005 SPHEREx pixels.</p>
+      <RwAurigaeMotion />
+    </>}
     {gaiaOverlay && <p role="status">{gaiaError ? 'Gaia DR3 could not load. Toggle Gaia to retry.' : gaiaSources.length ? 'Cyan circles show Gaia DR3 catalog sources at their published positions.' : 'Loading Gaia DR3 sources…'}</p>}
     {wiseOverlay && <p role="status">{wiseError ? 'WISE could not load. Toggle WISE to retry.' : wiseImage ? 'AllWISE W2 (4.6 µm) image blended over the SPHEREx view. NASA/IPAC, via CDS.' : 'Loading AllWISE W2…'}</p>}
     {difference
       ? <p>Cyan shows brighter pixels in the comparison image and red shows brighter pixels in the reference. This view subtracts display brightness. Saturation, wavelength and exposure differences can also leave residuals.</p>
-      : <p>Press Play to blink through the observation dates. {markerPosition && "Use a narrower field to compare the marked star against its neighbors. The ring follows the position predicted from Gaia DR3."}</p>}
+      : <p>Press Play to blink through the observation dates. {markerPosition && target === "Barnard’s Star" && "Use a narrower field to compare the marked star against its neighbors. The ring follows the position predicted from Gaia DR3."}</p>}
     {current && <p>NASA / JPL-Caltech / SPHEREx, via NASA/IPAC IRSA · <a href={current.source}>Original FITS observation</a>{current.original && <> · <a href={directory + current.original}>Full detector image</a></>}</p>}
   </div>
 }

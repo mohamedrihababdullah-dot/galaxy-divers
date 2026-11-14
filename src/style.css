@@ -286,3 +286,9 @@ select { width: 100%; padding: 8px; border: 1px solid var(--border); border-radi
 .spherex-sequence-frame > p { padding: 1rem; }
 .spherex-star-marker { position: absolute; width: 30px; height: 30px; transform: translate(-50%, -50%); border: 2px solid var(--accent); border-radius: 50%; pointer-events: none; }
 .spherex-star-marker span { position: absolute; left: calc(100% + 6px); top: -4px; padding: 2px 4px; border-radius: 4px; background: #060a12; color: var(--accent); font-size: 12px; white-space: nowrap; }
+
+.rw-motion { margin-top: 12px; }
+.rw-motion-plot { position: relative; height: 160px; margin: 10px 0; background: #060a12; border-radius: 8px; }
+.rw-motion-plot span { position: absolute; width: 10px; height: 10px; transform: translate(-50%, -50%); border: 1px solid var(--accent); border-radius: 50%; }
+.rw-motion-point { background: var(--accent); }
+.rw-motion label { display: flex; align-items: center; gap: 10px; }

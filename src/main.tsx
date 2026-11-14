@@ -83,6 +83,8 @@ function App() {
   const showWiseImages = isBarnard && product === 'images'
   const imageDirectory = !upload && !demoTarget && sequence && sequence.imageDirectory
   const isWise0855 = sequence?.target === 'WISE 0855'
+  const isRwAurigae = sequence?.target === 'RW Aurigae'
+  const hasOverlays = isWise0855 || isRwAurigae
   const showProvidedImages = isWise0855 && product === 'provided-images'
   const showSpherexImages = (!isBarnard || product === 'spherex-images') && imageDirectory
 
@@ -177,7 +179,7 @@ function App() {
         const preset = presets.find(item => item.target === target)
         if (!preset) return
         if (target === 'WISE 0855') select(wise0855)
-        else select(preset, target, 'difference')
+        else select(preset)
         requestAnimationFrame(() => document.getElementById('observation-viewer')?.scrollIntoView({ block: 'start' }))
       }} />
       <section id="explorer" className="explorer" aria-labelledby="explorer-title">
@@ -231,14 +233,14 @@ function App() {
           <h2 id="telescope-heading">Compare telescopes</h2>
           <div className="studio-modes">
             {telescopes.map(({ id, label }) => <button key={id} type="button"
-              disabled={!isBarnard && !isWise0855} aria-pressed={id === 'wise' ? (isWise0855 ? wiseOverlay : showWiseImages) : showGaia}
-              aria-controls={id === 'wise' || isWise0855 ? 'observation-viewer' : 'telescope-comparisons'} onClick={() => {
-                if (id === 'wise' && isWise0855) setWiseOverlay(value => !value)
+              disabled={!isBarnard && !hasOverlays} aria-pressed={id === 'wise' ? (hasOverlays ? wiseOverlay : showWiseImages) : showGaia}
+              aria-controls={id === 'wise' || hasOverlays ? 'observation-viewer' : 'telescope-comparisons'} onClick={() => {
+                if (id === 'wise' && hasOverlays) setWiseOverlay(value => !value)
                 else if (id === 'wise') changeDataset('product', showWiseImages ? 'spherex-images' : 'images')
                 else setShowGaia(value => !value)
               }}>{label}</button>)}
           </div>
-          <p>{isBarnard ? 'Show Gaia’s motion plot or switch to the WISE image sequence.' : isWise0855 ? 'Overlay Gaia DR3 sources or blend in the AllWISE W2 image.' : 'Select Barnard’s Star or WISE 0855 to compare telescopes.'}</p>
+          <p>{isBarnard ? 'Show Gaia’s motion plot or switch to the WISE image sequence.' : hasOverlays ? 'Overlay Gaia DR3 sources or blend in the AllWISE W2 image.' : 'Select Barnard’s Star, WISE 0855 or RW Aurigae to compare telescopes.'}</p>
         </aside>
         </div>
         <section id="observation-viewer" className="panel viewer" aria-label="Observation viewer">
@@ -278,7 +280,8 @@ function App() {
           {showWiseImages ? <WiseImageSequence key={viewKey} />
             : showSpherexImages ? <SpherexImageSequence key={viewKey + ':' + showProvidedImages}
               directory={showProvidedImages ? showSpherexImages + 'provided/' : showSpherexImages}
-              target={sequence.target} hideMarker={isWise0855} gaiaOverlay={isWise0855 && showGaia} wiseOverlay={isWise0855 && wiseOverlay} />
+              target={sequence.target} hideMarker={isWise0855} overlayDirectory={hasOverlays ? showSpherexImages : undefined}
+              gaiaOverlay={hasOverlays && showGaia} wiseOverlay={hasOverlays && wiseOverlay} />
             : upload ? <Studio key={viewKey} cube={upload.cube} target={upload.target} coords={upload.coords} zoom={zoom} onZoom={changeZoom} local />
             : demoData ? <Studio key={viewKey} cube={demoData} target={demoTarget} coords={demoPreset} zoom={zoom} onZoom={changeZoom} simulated />
             : sequence && cubeUrl ? <ObservationStudio key={`${viewKey}:${cubeUrl}`} url={cubeUrl} target={sequence.target} coords={sequence} zoom={zoom} onZoom={changeZoom} field={selectedField ? selectedField.id : 'standard'} />
