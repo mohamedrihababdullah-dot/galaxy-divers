@@ -82,7 +82,7 @@ function App() {
   const showWiseImages = isBarnard && product === 'images'
   const imageDirectory = !upload && !demoTarget && sequence && sequence.imageDirectory
   const isWise0855 = sequence?.target === 'WISE 0855'
-  const showProvidedImages = isWise0855 && product !== 'archive-images'
+  const showProvidedImages = isWise0855 && product === 'provided-images'
   const showSpherexImages = (!isBarnard || product === 'spherex-images') && imageDirectory
 
   useEffect(() => {
@@ -266,16 +266,16 @@ function App() {
             </label>}
           </div>}
           {isWise0855 && showSpherexImages && <div className="dataset-controls">
-            <label>View <select value={showProvidedImages ? 'spherex-images' : 'archive-images'}
+            <label>View <select value={showProvidedImages ? 'provided-images' : 'spherex-images'}
               onChange={event => changeDataset('product', event.target.value)}>
-              <option value="spherex-images">SPHEREx · Two wide-field images</option>
-              <option value="archive-images">SPHEREx · All 18 archive images</option>
+              <option value="spherex-images">SPHEREx · 18 detector images</option>
+              <option value="provided-images">SPHEREx · Two Detector 6 images</option>
             </select></label>
           </div>}
           {showWiseImages ? <WiseImageSequence key={viewKey} />
             : showSpherexImages ? <SpherexImageSequence key={viewKey + ':' + showProvidedImages}
               directory={showProvidedImages ? showSpherexImages + 'provided/' : showSpherexImages}
-              target={sequence.target} predictedMarker={showProvidedImages} />
+              target={sequence.target} predictedMarker={isWise0855} />
             : upload ? <Studio key={viewKey} cube={upload.cube} target={upload.target} coords={upload.coords} zoom={zoom} onZoom={changeZoom} local />
             : demoData ? <Studio key={viewKey} cube={demoData} target={demoTarget} coords={demoPreset} zoom={zoom} onZoom={changeZoom} simulated />
             : sequence && cubeUrl ? <ObservationStudio key={`${viewKey}:${cubeUrl}`} url={cubeUrl} target={sequence.target} coords={sequence} zoom={zoom} onZoom={changeZoom} field={selectedField ? selectedField.id : 'standard'} />
