@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 
-type Frame = { image: string; detector: number; date: string; source: string; star?: [number, number] }
+type Frame = { image: string; detector: number; date: string; source: string; original?: string; star?: [number, number] }
 type LoadedFrame = Frame & { imageElement: HTMLImageElement }
 
 function loadFrame(directory: string, frame: Frame): Promise<LoadedFrame> {
@@ -9,7 +9,7 @@ function loadFrame(directory: string, frame: Frame): Promise<LoadedFrame> {
   return imageElement.decode().then(() => ({ ...frame, imageElement }))
 }
 
-export function SpherexImageSequence({ directory, target }: { directory: string; target: string }) {
+export function SpherexImageSequence({ directory, target, predictedMarker = false }: { directory: string; target: string; predictedMarker?: boolean }) {
   const [manifest, setManifest] = useState<Frame[]>([])
   const [frames, setFrames] = useState<LoadedFrame[]>([])
   const [error, setError] = useState('')
@@ -32,7 +32,10 @@ export function SpherexImageSequence({ directory, target }: { directory: string;
         if (!response.ok) throw new Error('Manifest unavailable')
         return response.json()
       })
-      .then(setManifest)
+      .then((items: Frame[]) => {
+        setDetector(items[0].detector)
+        setManifest(items)
+      })
       .catch(() => { if (!controller.signal.aborted) setError('Could not load the SPHEREx archive index.') })
     return () => controller.abort()
   }, [directory])
@@ -87,7 +90,7 @@ export function SpherexImageSequence({ directory, target }: { directory: string;
         setError('')
         setDetector(Number(event.target.value))
       }}>
-        {[1, 2, 3, 4, 5, 6].map(id => <option key={id} value={id}>Detector {id}</option>)}
+        {[...new Set(manifest.map(item => item.detector))].map(id => <option key={id} value={id}>Detector {id}</option>)}
       </select></label>
       <label>Field width <select value={zoom} onChange={event => setZoom(Number(event.target.value))}>
         {[1, 2, 4, 8].map(factor => <option key={factor} value={factor}>
@@ -109,7 +112,7 @@ export function SpherexImageSequence({ directory, target }: { directory: string;
       {current?.star && marker && <span className="spherex-star-marker" style={{
         left: (50 + ((current.star[0] + .5) / size - .5) * zoom) + '%',
         top: (50 + ((current.star[1] + .5) / size - .5) * zoom) + '%',
-      }}><span>{target}</span></span>}
+      }}><span>{target}{predictedMarker && " · predicted"}</span></span>}
     </div>
     <div className="studio-playback">
       <button type="button" className="primary" disabled={!current || difference} onClick={() => setPlaying(value => !value)}>
@@ -127,7 +130,9 @@ export function SpherexImageSequence({ directory, target }: { directory: string;
     </div>
     {difference
       ? <p>Cyan shows brighter pixels in the comparison image and red shows brighter pixels in the reference. This view subtracts display brightness. Saturation, wavelength and exposure differences can also leave residuals.</p>
-      : <p>Press Play to blink through the three dates. {current?.star ? "Use a narrower field to compare the marked star against its neighbors. The ring follows the position predicted from Gaia DR3." : "These exposures cover the WISE 0855 field. The brown dwarf may be too faint to identify in individual images."}</p>}
-    {current && <p>NASA / JPL-Caltech / SPHEREx, via NASA/IPAC IRSA · <a href={current.source}>Original FITS observation</a></p>}
+      : <p>Press Play to blink through the observation dates. {!predictedMarker && (current?.star ? "Use a narrower field to compare the marked star against its neighbors. The ring follows the position predicted from Gaia DR3." : "These exposures cover the WISE 0855 field. The brown dwarf may be too faint to identify in individual images.")}</p>}
+    {predictedMarker && <p>The ring marks the predicted position of WISE 0855, a brown dwarf.
+      Its detection in these exposures is unconfirmed. <a href="https://doi.org/10.3847/0004-6256/152/3/78">Published astrometry</a></p>}
+    {current && <p>NASA / JPL-Caltech / SPHEREx, via NASA/IPAC IRSA · <a href={current.source}>Original FITS observation</a>{current.original && <> · <a href={directory + current.original}>Full detector image</a></>}</p>}
   </div>
 }

@@ -1,0 +1,34 @@
+[
+  {
+    "image": "WISE_0855_D6_2025-11-14.webp",
+    "original": "WISE_0855_D6_2025-11-14.png",
+    "detector": 6,
+    "date": "2025-11-14T12:07:21.417Z",
+    "source": "https://irsa.ipac.caltech.edu/ibe/data/spherex/dr1/level2/2025W46_2A/l2b-v27-2026-207/6/level2_2025W46_2A_0214_1D6_spx_l2b-v27-2026-207.fits",
+    "archiveId": "ivo://irsa.ipac/spherex_dr1?2025W46_2A_0214_1/D6",
+    "star": [
+      209.505,
+      209.611
+    ],
+    "originalStar": [
+      1312.194,
+      1038.924
+    ]
+  },
+  {
+    "image": "WISE_0855_D6_2026-04-23.webp",
+    "original": "WISE_0855_D6_2026-04-23.png",
+    "detector": 6,
+    "date": "2026-04-23T10:34:56.697Z",
+    "source": "https://irsa.ipac.caltech.edu/ibe/data/spherex/dr1/level2/2026W17_1B/l2b-v27-2026-242/6/level2_2026W17_1B_0634_4D6_spx_l2b-v27-2026-242.fits",
+    "archiveId": "ivo://irsa.ipac/spherex_dr1?2026W17_1B_0634_4/D6",
+    "star": [
+      210.079,
+      209.563
+    ],
+    "originalStar": [
+      1775.75,
+      1069.857
+    ]
+  }
+]

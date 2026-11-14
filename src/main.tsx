@@ -81,6 +81,8 @@ function App() {
   const isBarnard = !upload && sequence?.target === 'Barnard’s Star'
   const showWiseImages = isBarnard && product === 'images'
   const imageDirectory = !upload && !demoTarget && sequence && sequence.imageDirectory
+  const isWise0855 = sequence?.target === 'WISE 0855'
+  const showProvidedImages = isWise0855 && product !== 'archive-images'
   const showSpherexImages = (!isBarnard || product === 'spherex-images') && imageDirectory
 
   useEffect(() => {
@@ -263,8 +265,17 @@ function App() {
               </select>
             </label>}
           </div>}
+          {isWise0855 && showSpherexImages && <div className="dataset-controls">
+            <label>View <select value={showProvidedImages ? 'spherex-images' : 'archive-images'}
+              onChange={event => changeDataset('product', event.target.value)}>
+              <option value="spherex-images">SPHEREx · Two wide-field images</option>
+              <option value="archive-images">SPHEREx · All 18 archive images</option>
+            </select></label>
+          </div>}
           {showWiseImages ? <WiseImageSequence key={viewKey} />
-            : showSpherexImages ? <SpherexImageSequence key={viewKey} directory={showSpherexImages} target={sequence.target} />
+            : showSpherexImages ? <SpherexImageSequence key={viewKey + ':' + showProvidedImages}
+              directory={showProvidedImages ? showSpherexImages + 'provided/' : showSpherexImages}
+              target={sequence.target} predictedMarker={showProvidedImages} />
             : upload ? <Studio key={viewKey} cube={upload.cube} target={upload.target} coords={upload.coords} zoom={zoom} onZoom={changeZoom} local />
             : demoData ? <Studio key={viewKey} cube={demoData} target={demoTarget} coords={demoPreset} zoom={zoom} onZoom={changeZoom} simulated />
             : sequence && cubeUrl ? <ObservationStudio key={`${viewKey}:${cubeUrl}`} url={cubeUrl} target={sequence.target} coords={sequence} zoom={zoom} onZoom={changeZoom} field={selectedField ? selectedField.id : 'standard'} />
