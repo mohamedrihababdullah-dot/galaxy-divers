@@ -59,6 +59,38 @@ html { scroll-behavior: smooth; }
   inset: 0;
   background: url('/hero/solar-system.png') center / 100% 100% no-repeat;
 }
+.solar-surface {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  clip-path: ellipse(var(--rx) var(--ry) at var(--x) var(--y));
+}
+.solar-surface::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: url('/hero/solar-system.png') center / 100% 100% no-repeat;
+  transform-origin: var(--x) var(--y);
+}
+.sun-surface {
+  --x: -2%; --y: 16%; --rx: 12.4%; --ry: 21%;
+  mask-image: linear-gradient(to right, transparent, black 3%);
+}
+.mercury-surface { --x: 17.1%; --y: 25.8%; --rx: 1.18%; --ry: 2.1%; }
+.venus-surface { --x: 25.1%; --y: 26.6%; --rx: 1.72%; --ry: 3.05%; }
+.earth-surface { --x: 34.2%; --y: 27.5%; --rx: 2.58%; --ry: 4.58%; }
+.mars-surface { --x: 44.2%; --y: 28.7%; --rx: 1.7%; --ry: 3.02%; }
+.neptune-surface { --x: 62.2%; --y: 31.2%; --rx: 4.85%; --ry: 8.6%; }
+@media (prefers-reduced-motion: no-preference) {
+  .solar-surface::before, .hero-planet { animation: solar-turn 24s ease-in-out infinite; }
+  .sun-surface::before { --turn: 2deg; animation-duration: 36s; }
+  .venus-surface::before, .saturn { --turn: -7deg; animation-duration: 30s; }
+  .earth-surface::before, .jupiter { animation-duration: 20s; }
+  .mars-surface::before, .uranus { animation-duration: 28s; }
+}
+@keyframes solar-turn {
+  50% { rotate: var(--turn, 7deg); }
+}
 .hero-planet {
   position: absolute;
   width: var(--diameter);

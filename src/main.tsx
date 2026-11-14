@@ -151,6 +151,12 @@ function App() {
     <main id="home">
       <section className="hero" aria-labelledby="hero-title">
         <div className="solar-scene" role="img" aria-label="Illustration of the Sun and all eight planets: Mercury, Venus, Earth, Mars, Jupiter, Saturn, Uranus, and Neptune. Hypothetical Planet X is shown beyond Neptune.">
+          <span className="solar-surface sun-surface" aria-hidden="true" />
+          <span className="solar-surface mercury-surface" aria-hidden="true" />
+          <span className="solar-surface venus-surface" aria-hidden="true" />
+          <span className="solar-surface earth-surface" aria-hidden="true" />
+          <span className="solar-surface mars-surface" aria-hidden="true" />
+          <span className="solar-surface neptune-surface" aria-hidden="true" />
           <span className="hero-planet jupiter" title="Jupiter" />
           <span className="hero-planet saturn" title="Saturn" />
           <span className="hero-planet uranus" title="Uranus" />
