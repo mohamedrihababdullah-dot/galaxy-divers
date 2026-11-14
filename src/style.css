@@ -172,9 +172,8 @@ aside { padding: 20px; }
 .telescope-image { background: #060a12; display: grid; place-items: center; aspect-ratio: 1; }
 .telescope-image img:not([hidden]), .telescope-image svg { display: block; width: 100%; height: auto; }
 .wise-sequence { padding: 0 16px 16px; }
-.wise-sequence-frame { aspect-ratio: 15 / 8; overflow: hidden; border-radius: 8px; background: #060a12; }
-.wise-sequence-frame img:not([hidden]) { display: block; width: 100%; height: 100%; object-fit: cover; }
-.wise-sequence-frame img { filter: grayscale(1) invert(1); }
+.wise-sequence-frame { aspect-ratio: 676 / 674; overflow: hidden; border-radius: 8px; background: #060a12; }
+.wise-sequence-frame img:not([hidden]) { display: block; width: 100%; height: 100%; object-fit: contain; }
 .wise-sequence .studio-playback input { flex: 1 1 100px; width: auto; accent-color: var(--accent); }
 .wise-sequence p { font-size: 13px; color: var(--muted); margin-bottom: 0; }
 form { display: grid; gap: 13px; margin-top: 16px; }
