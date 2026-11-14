@@ -137,6 +137,17 @@ html { scroll-behavior: smooth; }
   50% { opacity: 1; }
 }
 .explorer { width: min(1160px, calc(100% - 44px)); margin: 38px auto 60px; scroll-margin-top: 24px; }
+.spherex-about { width: min(1120px, calc(100% - 40px)); margin: clamp(30px, 6vw, 76px) auto 72px; }
+.spherex-about section + section { margin-top: clamp(36px, 6vw, 68px); }
+.spherex-overview { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 360px), 1fr)); gap: clamp(22px, 5vw, 56px); align-items: center; }
+.spherex-about h1 { font-size: clamp(42px, 7vw, 88px); line-height: 1; margin: 0 0 22px; }
+.spherex-about h2 { font-size: clamp(24px, 4vw, 40px); margin: 0 0 12px; }
+.spherex-about p { max-width: 68ch; color: var(--muted); line-height: 1.65; }
+.spherex-about .spherex-lead { font-size: clamp(18px, 2vw, 22px); color: inherit; }
+.spherex-about figure { margin: 0; }
+.spherex-about img { width: 100%; height: auto; display: block; border-radius: 12px; border: 1px solid var(--border); }
+.spherex-about figcaption { margin-top: 10px; font-size: 13px; color: var(--muted); }
+.site-nav a[aria-current="page"] { color: var(--accent); }
 #explorer-title { font-size: clamp(32px, 5vw, 52px); letter-spacing: -.045em; }
 .sky-guide { width: min(1160px, calc(100% - 44px)); margin: 36px auto 66px; scroll-margin-top: 24px; }
 .guide-intro { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); align-items: center; gap: 24px; }

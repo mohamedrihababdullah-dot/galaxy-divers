@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { createRoot } from 'react-dom/client'
+import { AboutSpherex } from './AboutSpherex'
 import './style.css'
 import { ObservationStudio, Studio } from './Studio'
 import { SkyMap } from './SkyMap'
@@ -18,6 +19,25 @@ const targets = ['Barnard’s Star', 'Epsilon Indi B', 'WISE 0855', 'RW Aurigae'
 const telescopes = [{ id: 'gaia', label: 'Gaia' }, { id: 'wise', label: 'WISE' }] as const
 const demo = { ra: 133.795129, dec: -7.245147 }
 const query = new URLSearchParams(location.search)
+const isSpherexPage = location.pathname.replace(/\/$/, '') === '/spherex'
+
+function SiteHeader() {
+  const home = isSpherexPage ? '/' : ''
+  return <header className="site-header">
+    <a className="brand" href={`${home}#home`}>
+      <span className="galaxy-mark" aria-hidden="true" />
+      <span className="brand-copy"><strong>Galaxy Divers</strong><small>Dive into · Discover · Explore</small></span>
+    </a>
+    <nav className="site-nav" aria-label="Main navigation">
+      <a className="nav-home" href={`${home}#home`}><span aria-hidden="true">⌂</span> Home</a>
+      <a href={`${home}#explorer`}><span aria-hidden="true">♄</span> Explore</a>
+      <a href="/spherex" aria-current={isSpherexPage ? 'page' : undefined}><span aria-hidden="true">✧</span> SPHEREx</a>
+      <a href={`${home}#planet-x`}><span aria-hidden="true">ⓘ</span> Planet X</a>
+      <a href={`${home}#about`}><span aria-hidden="true">ⓘ</span> About</a>
+    </nav>
+    <a className="header-link" href={`${home}#explorer`}><span aria-hidden="true">✦</span> Explore the Unknown</a>
+  </header>
+}
 
 const presets = [
   { target: 'WISE 0855', ...demo },
@@ -127,20 +147,7 @@ function App() {
   }
 
   return <div className={embed ? 'embedded' : undefined}>
-    <header className="site-header">
-      <a className="brand" href="#home">
-        <span className="galaxy-mark" aria-hidden="true" />
-        <span className="brand-copy"><strong>Galaxy Divers</strong><small>Dive into · Discover · Explore</small></span>
-      </a>
-      <nav className="site-nav" aria-label="Main navigation">
-        <a className="nav-home" href="#home"><span aria-hidden="true">⌂</span> Home</a>
-        <a href="#explorer"><span aria-hidden="true">♄</span> Explore</a>
-        <a href="#spherex"><span aria-hidden="true">✧</span> SPHEREx</a>
-        <a href="#planet-x"><span aria-hidden="true">ⓘ</span> Planet X</a>
-        <a href="#about"><span aria-hidden="true">ⓘ</span> About</a>
-      </nav>
-      <a className="header-link" href="#explorer"><span aria-hidden="true">✦</span> Explore the Unknown</a>
-    </header>
+    <SiteHeader />
     <main id="home">
       <section className="hero" aria-labelledby="hero-title">
         <div className="solar-scene" role="img" aria-label="Illustration of the Sun and all eight planets: Mercury, Venus, Earth, Mars, Jupiter, Saturn, Uranus, and Neptune. Hypothetical Planet X is shown beyond Neptune.">
@@ -292,4 +299,5 @@ function App() {
   </div>
 }
 
-createRoot(document.getElementById('root')!).render(<App />)
+if (isSpherexPage) document.title = 'About SPHEREx | Galaxy Divers'
+createRoot(document.getElementById('root')!).render(isSpherexPage ? <><SiteHeader /><AboutSpherex /></> : <App />)
