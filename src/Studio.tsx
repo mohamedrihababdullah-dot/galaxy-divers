@@ -233,7 +233,7 @@ export function Studio({ cube, target, coords, zoom, onZoom, field, simulated = 
       ...(point && tagged ? { candidate: '1' } : {}),
       ...(mode === 'blink' && !playAll ? { playback: 'pair' } : {}),
       ...(!faintStars ? { stretch: 'original' } : {}),
-      ...(!canCompare ? { product: 'spectrum' } : {}),
+      product: canCompare ? 'epochs' : 'spectrum',
       ...(field ? { field } : {}),
       ...(embed === '1' ? { embed } : {}),
     }).toString()

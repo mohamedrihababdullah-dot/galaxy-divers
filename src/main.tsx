@@ -5,7 +5,8 @@ import { ObservationStudio, Studio } from './Studio'
 import { SkyMap } from './SkyMap'
 import { SkyGuide } from './SkyGuide'
 import { ArchiveSearch } from './ArchiveSearch'
-import { TelescopeComparison, type Telescope } from './TelescopeComparison'
+import { GaiaComparison } from './TelescopeComparison'
+import { WiseImageSequence } from './WiseImageSequence'
 import { ObservationUpload, saveObservation, type UploadedObservation } from './ObservationUpload'
 import { demoCube, parseCoordinates } from './studio-data'
 
@@ -33,8 +34,8 @@ function App() {
   const [demoTarget, setDemoTarget] = useState(() => presets.find(item => item.target === query.get('demo'))?.target ?? (query.has('ra') || query.has('dec') ? '' : presets[0].target))
   const [zoom, setZoom] = useState(() => /^[1-5]$/.test(query.get('zoom') ?? '') ? Number(query.get('zoom')) : 1)
   const [viewKey, setViewKey] = useState(0)
-  const [comparisons, setComparisons] = useState<Telescope[]>([])
-  const [product, setProduct] = useState(query.get('product') === 'spectrum' ? 'spectrum' : 'epochs')
+  const [showGaia, setShowGaia] = useState(false)
+  const [product, setProduct] = useState(query.get('product') ?? (query.has('x') || query.has('y') ? 'epochs' : 'images'))
   const [field, setField] = useState(query.get('field') ?? '')
   const [embed] = useState(query.get('embed') === '1')
   const demoData = useMemo(() => demoTarget ? demoCube(demoTarget) : null, [demoTarget])
@@ -55,6 +56,7 @@ function App() {
   const spectrum = sequence && (product === 'spectrum' || !sequence.cube) && sequence.spectrum
   const cubeUrl = sequence && (spectrum || selectedField?.cube || sequence.cube)
   const isBarnard = !upload && sequence?.target === 'Barnard’s Star'
+  const showWiseImages = isBarnard && product === 'images'
 
   useEffect(() => {
     if (query.has('ra') || query.has('dec') || location.hash === '#explorer') {
@@ -83,12 +85,12 @@ function App() {
     setUpload(null)
     setDemoTarget(target)
     setViewKey(value => value + 1)
-    setComparisons([])
+    setShowGaia(false)
     setPosition(coords)
     setFrame(0)
     setPlaying(false)
     setError('')
-    setProduct('epochs')
+    setProduct('images')
     setField(initialField)
     const url = new URL(location.href)
     url.search = new URLSearchParams({
@@ -219,11 +221,13 @@ function App() {
           <h2 id="telescope-heading">Compare telescopes</h2>
           <div className="studio-modes">
             {telescopes.map(({ id, label }) => <button key={id} type="button"
-              disabled={!isBarnard} aria-pressed={isBarnard && comparisons.includes(id)}
-              aria-controls="telescope-comparisons" onClick={() => setComparisons(active =>
-                active.includes(id) ? active.filter(item => item !== id) : [...active, id])}>{label}</button>)}
+              disabled={!isBarnard} aria-pressed={id === 'wise' ? showWiseImages : isBarnard && showGaia}
+              aria-controls={id === 'wise' ? 'observation-viewer' : 'telescope-comparisons'} onClick={() => {
+                if (id === 'wise') changeDataset('product', showWiseImages ? 'epochs' : 'images')
+                else setShowGaia(value => !value)
+              }}>{label}</button>)}
           </div>
-          <p>{isBarnard ? 'Show Gaia’s motion plot or blink two WISE images.' : 'Select Barnard’s Star to compare Gaia and WISE.'}</p>
+          <p>{isBarnard ? 'Show Gaia’s motion plot or switch to the WISE image sequence.' : 'Select Barnard’s Star to compare Gaia and WISE.'}</p>
         </aside>
         </div>
         <section id="observation-viewer" className="panel viewer" aria-label="Observation viewer">
@@ -231,28 +235,29 @@ function App() {
             <h2>{upload?.target || demoTarget || (sequence ? sequence.target : 'Observation search')}</h2>
             {upload && <button onClick={() => saveObservation(upload)}>Save observation JSON</button>}
             {demoTarget && <span className="badge">Simulated data</span>}
-            {!upload && !demoTarget && sequence && <span className="badge">NASA/IPAC IRSA</span>}
+            {!upload && !demoTarget && sequence && <span className="badge">{showWiseImages ? 'NASA WISE' : 'NASA/IPAC IRSA'}</span>}
             {!upload && !demoTarget && !sequence && <button onClick={() => select(presets[0], presets[0].target)}>Open demo</button>}
           </div>
-          <div id="telescope-comparisons" className="telescope-comparisons" hidden={!isBarnard || comparisons.length === 0}>
-            {isBarnard && telescopes.filter(({ id }) => comparisons.includes(id)).map(({ id }) =>
-              <TelescopeComparison key={id} telescope={id} />)}
+          <div id="telescope-comparisons" className="telescope-comparisons" hidden={!isBarnard || !showGaia}>
+            {isBarnard && showGaia && <GaiaComparison />}
           </div>
           {!upload && !demoTarget && sequence && (sequence.spectrum || sequence.fields?.length) && <div className="dataset-controls">
-            {sequence.spectrum && <label>SPHEREx product
-              <select value={spectrum ? 'spectrum' : 'epochs'} onChange={event => changeDataset('product', event.target.value)}>
-                {sequence.cube && <option value="epochs">Multi-epoch images</option>}
+            {sequence.spectrum && <label>View
+              <select value={showWiseImages ? 'images' : spectrum ? 'spectrum' : 'epochs'} onChange={event => changeDataset('product', event.target.value)}>
+                {isBarnard && <option value="images">WISE · Wide-field images</option>}
+                {sequence.cube && <option value="epochs">SPHEREx · Epoch analysis</option>}
                 <option value="spectrum">DR1 · 102-channel mosaic</option>
               </select>
             </label>}
-            {!spectrum && !!sequence.fields?.length && <label>Download field
+            {!showWiseImages && !spectrum && !!sequence.fields?.length && <label>Download field
               <select value={selectedField ? selectedField.id : ''} onChange={event => changeDataset('field', event.target.value)}>
                 <option value="">Standard field · 2.70′</option>
                 {sequence.fields.map(item => <option key={item.id} value={item.id}>{item.label}</option>)}
               </select>
             </label>}
           </div>}
-          {upload ? <Studio key={viewKey} cube={upload.cube} target={upload.target} coords={upload.coords} zoom={zoom} onZoom={changeZoom} local />
+          {showWiseImages ? <WiseImageSequence key={viewKey} />
+            : upload ? <Studio key={viewKey} cube={upload.cube} target={upload.target} coords={upload.coords} zoom={zoom} onZoom={changeZoom} local />
             : demoData ? <Studio key={viewKey} cube={demoData} target={demoTarget} coords={demoPreset} zoom={zoom} onZoom={changeZoom} simulated />
             : sequence && cubeUrl ? <ObservationStudio key={`${viewKey}:${cubeUrl}`} url={cubeUrl} target={sequence.target} coords={sequence} zoom={zoom} onZoom={changeZoom} field={selectedField ? selectedField.id : 'standard'} />
             : <>
