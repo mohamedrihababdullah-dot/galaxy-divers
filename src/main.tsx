@@ -14,11 +14,12 @@ import { demoCube, parseCoordinates } from './studio-data'
 
 type Frame = { image: string; observedAt: string; wavelength: string; source: string }
 type Field = { id: string; label: string; cube: string }
-type Sequence = { target: string; ra: number; dec: number; frames: Frame[]; cube?: string; spectrum?: string; fields?: Field[] }
+type Sequence = { target: string; ra: number; dec: number; frames: Frame[]; imageDirectory?: string; cube?: string; spectrum?: string; fields?: Field[] }
 
 const targets = ['Barnard’s Star', 'Epsilon Indi B', 'WISE 0855', 'RW Aurigae', 'R Draconis']
 const telescopes = [{ id: 'gaia', label: 'Gaia' }, { id: 'wise', label: 'WISE' }] as const
 const demo = { ra: 133.795129, dec: -7.245147 }
+const wise0855 = { ra: 133.760, dec: -7.242 }
 const query = new URLSearchParams(location.search)
 const isSpherexPage = location.pathname.replace(/\/$/, '') === '/spherex'
 
@@ -49,10 +50,11 @@ function App() {
   const [upload, setUpload] = useState<UploadedObservation | null>(null)
   const [sequences, setSequences] = useState<Sequence[]>([])
   const [loadState, setLoadState] = useState<'loading' | 'ready' | 'error'>('loading')
-  const [ra, setRa] = useState(query.get('ra') ?? String(demo.ra))
-  const [dec, setDec] = useState(query.get('dec') ?? String(demo.dec))
-  const [position, setPosition] = useState(() => parseCoordinates(query.get('ra') ?? '', query.get('dec') ?? ''))
-  const [demoTarget, setDemoTarget] = useState(() => presets.find(item => item.target === query.get('demo'))?.target ?? (query.has('ra') || query.has('dec') ? '' : presets[0].target))
+  const [ra, setRa] = useState(query.get('ra') ?? String(wise0855.ra))
+  const [dec, setDec] = useState(query.get('dec') ?? String(wise0855.dec))
+  const [position, setPosition] = useState(() => query.has('ra') || query.has('dec')
+    ? parseCoordinates(query.get('ra') ?? '', query.get('dec') ?? '') : wise0855)
+  const [demoTarget, setDemoTarget] = useState(() => presets.find(item => item.target === query.get('demo'))?.target ?? '')
   const [zoom, setZoom] = useState(() => /^[1-5]$/.test(query.get('zoom') ?? '') ? Number(query.get('zoom')) : 1)
   const [viewKey, setViewKey] = useState(0)
   const [showGaia, setShowGaia] = useState(false)
@@ -64,7 +66,7 @@ function App() {
   const [error, setError] = useState('')
   const [frame, setFrame] = useState(0)
   const [playing, setPlaying] = useState(false)
-  const sequence = position && sequences.find((item) =>
+  const sequence = demoTarget || !position ? undefined : sequences.find((item) =>
     (Math.abs(item.ra - position.ra) < 0.000001 && Math.abs(item.dec - position.dec) < 0.000001) ||
     query.get('demo') === item.target && item.target === 'Barnard’s Star' && !viewKey)
   const frames = sequence ? [...sequence.frames].sort((a, b) =>
@@ -78,7 +80,8 @@ function App() {
   const cubeUrl = sequence && (spectrum || selectedField?.cube || sequence.cube)
   const isBarnard = !upload && sequence?.target === 'Barnard’s Star'
   const showWiseImages = isBarnard && product === 'images'
-  const showSpherexImages = isBarnard && product === 'spherex-images'
+  const imageDirectory = !upload && !demoTarget && sequence && sequence.imageDirectory
+  const showSpherexImages = (!isBarnard || product === 'spherex-images') && imageDirectory
 
   useEffect(() => {
     if (query.has('ra') || query.has('dec') || location.hash === '#explorer') {
@@ -169,7 +172,8 @@ function App() {
       <SkyGuide onDemo={target => {
         const preset = presets.find(item => item.target === target)
         if (!preset) return
-        select(preset, target, target === 'WISE 0855' ? 'blink' : 'difference')
+        if (target === 'WISE 0855') select(wise0855)
+        else select(preset, target, 'difference')
         requestAnimationFrame(() => document.getElementById('observation-viewer')?.scrollIntoView({ block: 'start' }))
       }} />
       <section id="explorer" className="explorer" aria-labelledby="explorer-title">
@@ -203,14 +207,14 @@ function App() {
           <label className="target-select">Quick-select target
             <select value={demoTarget || sequence && sequence.target || ''} onChange={event => {
               const target = event.target.value
-              const available = sequences.find(item => item.target === target && (item.cube || item.spectrum || item.frames.length))
+              const available = sequences.find(item => item.target === target && (item.imageDirectory || item.cube || item.spectrum || item.frames.length))
               const preset = presets.find(item => item.target === target)
               if (available) select(available)
               else if (preset) select(preset, target)
             }}>
               <option value="" disabled>Choose a target</option>
               {[...new Set([...targets, ...sequences.map(item => item.target)])].map(target => {
-                const ready = sequences.some(item => item.target === target && (item.cube || item.spectrum || item.frames.length))
+                const ready = sequences.some(item => item.target === target && (item.imageDirectory || item.cube || item.spectrum || item.frames.length))
                 const hasDemo = presets.some(item => item.target === target)
                 return <option key={target} value={target} disabled={!ready && !hasDemo}>
                   {target}{ready ? '' : hasDemo ? ' · simulated' : ' · awaiting data'}
@@ -260,7 +264,7 @@ function App() {
             </label>}
           </div>}
           {showWiseImages ? <WiseImageSequence key={viewKey} />
-            : showSpherexImages ? <SpherexImageSequence key={viewKey} />
+            : showSpherexImages ? <SpherexImageSequence key={viewKey} directory={showSpherexImages} target={sequence.target} />
             : upload ? <Studio key={viewKey} cube={upload.cube} target={upload.target} coords={upload.coords} zoom={zoom} onZoom={changeZoom} local />
             : demoData ? <Studio key={viewKey} cube={demoData} target={demoTarget} coords={demoPreset} zoom={zoom} onZoom={changeZoom} simulated />
             : sequence && cubeUrl ? <ObservationStudio key={`${viewKey}:${cubeUrl}`} url={cubeUrl} target={sequence.target} coords={sequence} zoom={zoom} onZoom={changeZoom} field={selectedField ? selectedField.id : 'standard'} />
@@ -285,8 +289,8 @@ function App() {
           </>}
         </section>
       </div>
-      <SkyMap coords={position ?? demoPreset} onSearch={coords => select(coords)} />
-      <ArchiveSearch coords={position ?? demoPreset} />
+      <SkyMap coords={(demoTarget ? demoPreset : position) ?? demoPreset} onSearch={coords => select(coords)} />
+      <ArchiveSearch coords={(demoTarget ? demoPreset : position) ?? demoPreset} />
       </section>
       <section className="mission-notes" aria-label="About the project">
         <div id="planet-x"><h2>Planet X</h2><p>Planet X is a hypothetical planet beyond Neptune. The red planet in the hero is an illustration.</p></div>

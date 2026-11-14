@@ -3,7 +3,7 @@ export function SkyGuide({ onDemo }: { onDemo: (target: 'WISE 0855' | 'RW Auriga
     <div className="guide-intro">
       <div>
         <h2 id="sky-guide-title">The sky is lying.</h2>
-        <p>It looks still. Look again. These two simulated images show the same field at different times. Flip between them and see if you can spot the dot that jumps.</p>
+        <p>It looks still. Look again. Blink through SPHEREx observations of the WISE 0855 field to see what changes between visits.</p>
         <p>Clyde Tombaugh used this same technique to spot Pluto against the background stars.</p>
         <button className="hero-action" onClick={() => onDemo('WISE 0855')}>Try Blink in the studio <span aria-hidden="true">→</span></button>
       </div>

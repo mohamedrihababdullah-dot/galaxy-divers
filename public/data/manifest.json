@@ -5,12 +5,20 @@
       "ra": 269.444,
       "dec": 4.768,
       "frames": [],
+      "imageDirectory": "/data/barnards-star/spherex-images/",
       "cube": "/data/barnards-star/cube.json",
       "spectrum": "/data/barnards-star/dr1-spectrum.json",
       "fields": [
         { "id": "surroundings", "label": "Surrounding stars · 7.97′", "cube": "/data/barnards-star/cube-surroundings.json.gz" },
         { "id": "wide", "label": "Wide field · 3.10′", "cube": "/data/barnards-star/cube-wide.json" }
       ]
+    },
+    {
+      "target": "WISE 0855",
+      "ra": 133.760,
+      "dec": -7.242,
+      "frames": [],
+      "imageDirectory": "/data/wise-0855/"
     }
   ]
 }
