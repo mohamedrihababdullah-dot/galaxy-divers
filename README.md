@@ -4,13 +4,31 @@ Run `npm ci` to install the dependencies and `npm run dev` to start the viewer l
 
 On Cloudflare Pages, use the repository root, the `main` production branch, `npm run build` as the build command, and `dist` as the output directory.
 
+## Explorer links and archive search
+
+Open `/?ra=269.444&dec=4.768&mode=blink#explorer` to jump to Barnard’s Star. Add `field=wide` to load the wider time-series cutout, `product=spectrum` to open the DR1 mosaic, or `embed=1` for an iframe-friendly Studio view. Any valid coordinates center the Aladin map and the IRSA query. Prepared observations load at registered coordinates.
+
+**Search the latest SPHEREx releases** queries IRSA SIA2 on demand through the Cloudflare Pages function in `functions/api/spherex.js`. Choose a collection and field width to find calibrated FITS products and obtain spectral-image cutouts. The direct IRSA link also works with the static Vite build. Larger cutouts can take longer to download. When IRSA publishes another collection, update the list in the search UI and the function allowlist.
+
+In the Aladin Lite map, choose a field width and turn on Gaia DR3 or AllWISE to overlay source positions. These catalog positions refer to the published coordinates and may differ from positions in later SPHEREx observations.
+
 ## Adding observations
+
+Select **Barnard’s Star** in the Studio to compare 18 calibrated NASA/IPAC IRSA SPHEREx exposures, one per detector in each of three survey periods. The archive links and losslessly gzip-compressed FITS cutouts are available under **NASA/IPAC IRSA observations**. The Studio loads a prepared cube on demand. Each plane was decoded with Astropy and reprojected onto the same north-up 2-arcsecond grid. The finer display grid retains the instrument's original resolution.
+
+To rebuild the cube from the bundled cutouts, install Astropy and SciPy and run `python scripts/prepare-barnards-star.py`. The detector views use exposures selected for similar passbands near the star. The source dates and measured wavelengths are listed for each exposure because the six detectors did not all observe the field at the same instant.
+
+To add a survey period, download six FITS cutouts at the same sky center, one per detector, and record each local filename and original archive URL in `public/data/barnards-star/observations.json`. Choose exposures with comparable wavelengths across survey periods. Rerun the preparation script for each field. The wide field uses `--field-arcmin 3.1 --output public/data/barnards-star/cube-wide.json`.
+
+The **DR1 · 102-channel mosaic** uses the [IRSA all-sky cube](https://doi.org/10.26131/IRSA679) around Barnard’s Star. Select an individual wavelength or average the available channels by detector. Click a pixel to generate its spectrum and export CSV with the FITS flag values. Pixels and channels with no usable measurements stay blank. The mosaic combines survey data across dates, so temporal comparisons use the separate multi-epoch product. Rebuild the mosaic browser asset with `python scripts/prepare-spectral-tile.py TILE.fits IRSA_FITS_URL 269.444 4.768 public/data/barnards-star/dr1-spectrum.json`.
+
+The star saturates the detector. For visual comparison the time-series cube retains finite samples around the bright source, including some flagged pixels. Blank pixels mark missing or masked data. The pixel readout reports the nearest native FITS flag per band, or the bitwise union across a detector stack. Use the original FITS quality flags for quantitative work. The spectral images are from [IRSA DR1](https://doi.org/10.26131/IRSA678) and QR3.
 
 Open **Upload observations** in the dashboard to compare 2–8 calibrated FITS cutouts from different dates, or reopen a prepared observation JSON. The browser runs Astropy and SciPy in a worker through Pyodide. FITS inputs need a 2D science image, celestial WCS, observation date, and brightness unit. Supply the shared wavelength and detector from the product metadata. The importer uses the first image’s central grid (up to 256 × 256 pixels), interpolates subsequent images onto it, and masks nonzero FLAGS and missing pixels. For SPHEREx products with a spatially varying bandpass, choose cutouts with comparable wavelength coverage before comparing epochs.
 
 **Save observation JSON** exports the prepared dataset for sharing or reopening. To publish a team dataset, place that JSON under `public/data/` and register its target, coordinates, and URL in the manifest as described below. The public catalog accepts the saved JSON wrapper as well as a plain cube.
 
-Put aligned, browser-ready image frames under `public/data/` and add their sequences to `public/data/manifest.json`. The included catalog is empty while the challenge resources are pending. The WISE 0855, Barnard’s Star, and RW Aurigae presets use simulated star fields and wavelength samples. RW Aurigae has a stationary source that changes brightness across four simulated dates.
+Put aligned, browser-ready image frames under `public/data/` and add their sequences to `public/data/manifest.json`. The WISE 0855 and RW Aurigae presets use simulated star fields and wavelength samples. RW Aurigae has a stationary source that changes brightness across four simulated dates.
 
 Each entry in `sequences` follows this structure. The paths and metadata below illustrate the format.
 

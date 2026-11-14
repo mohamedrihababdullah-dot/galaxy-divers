@@ -215,6 +215,18 @@ select { width: 100%; padding: 8px; border: 1px solid var(--border); border-radi
 .sky-map > p { padding-inline: 18px; color: var(--muted); margin: 0 0 14px; }
 .aladin-map { position: relative; width: 100%; height: clamp(280px, 50vh, 520px); background: #060a12; }
 .sky-map-actions { display: flex; flex-wrap: wrap; gap: 8px; padding: 12px 18px; }
+.sky-map-actions { align-items: end; }
+.sky-map-actions [role="status"] { flex-basis: 100%; color: var(--muted); font-size: 13px; }
+.sky-map-actions button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
+.dataset-controls { display: flex; flex-wrap: wrap; align-items: end; gap: 12px; }
+.viewer > .dataset-controls { padding: 0 16px 14px; }
+.archive-search { margin-top: 18px; padding: 14px 18px; }
+.archive-search summary { cursor: pointer; color: var(--accent); font-weight: 700; }
+.archive-results { max-height: 360px; overflow: auto; margin-top: 12px; }
+.archive-results table { border-collapse: collapse; width: 100%; font-size: 13px; text-align: left; }
+.archive-results th, .archive-results td { padding: 8px; border-bottom: 1px solid var(--border); }
+.embedded .site-header, .embedded main > .hero, .embedded .sky-guide, .embedded .mission-notes { display: none; }
+.embedded .explorer { padding-top: 16px; }
 @media (max-width: 950px) {
   .site-header { flex-wrap: wrap; }
   .site-nav { order: 1; flex: 1 0 100%; overflow-x: auto; padding-block: 2px; }

@@ -1,3 +1,15 @@
 {
-  "sequences": []
+  "sequences": [
+    {
+      "target": "Barnard’s Star",
+      "ra": 269.444,
+      "dec": 4.768,
+      "frames": [],
+      "cube": "/data/barnards-star/cube.json",
+      "spectrum": "/data/barnards-star/dr1-spectrum.json",
+      "fields": [
+        { "id": "wide", "label": "Wide field · 3.10′", "cube": "/data/barnards-star/cube-wide.json" }
+      ]
+    }
+  ]
 }

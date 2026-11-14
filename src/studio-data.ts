@@ -1,12 +1,22 @@
 export type Coordinates = { ra: number; dec: number }
 export type Band = { wavelength: number; detector: number }
 export type Plane = ArrayLike<number | null>
+export type BandObservation = {
+  date: string
+  source: string
+  cutout: string
+  wavelength: number
+  bandwidth: number
+}
 export type Cube = {
   width: number
   height: number
   unit: string
+  pixelScaleArcsec?: number
+  flagNames?: Record<string, string>
+  note?: string
   bands: Band[]
-  epochs: { date: string; source?: string; planes: Plane[] }[]
+  epochs: { date: string; source?: string; label?: string; observations?: BandObservation[]; planes: Plane[]; flags?: Plane[] }[]
 }
 
 export function parseCoordinates(ra: string, dec: string): Coordinates | null {
@@ -32,8 +42,7 @@ export function demoCube(target: string): Cube {
   const height = 118
   const sky = new Float32Array(width * height)
   const variable = target === 'RW Aurigae'
-  const isBarnard = target === 'Barnard’s Star'
-  let seed = variable ? 719 : isBarnard ? 510 : 638
+  let seed = variable ? 719 : 638
   const random = () => {
     seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0
     return seed / 4294967296
@@ -62,8 +71,8 @@ export function demoCube(target: string): Cube {
       if (variable) {
         addStar(pixels, width / 2, height / 2, [.93, .24, .52, .81][epoch] * (1.15 - .1 * wavelength))
       } else {
-        addStar(pixels, (isBarnard ? 92 : 105) + epoch * 9, (isBarnard ? 64 : 59) - epoch * 3,
-          .18 + .72 * Math.exp(-((wavelength - (isBarnard ? 1.25 : 3.7)) ** 2) / 1.2))
+        addStar(pixels, 105 + epoch * 9, 59 - epoch * 3,
+          .18 + .72 * Math.exp(-((wavelength - 3.7) ** 2) / 1.2))
       }
       return pixels
     }),
@@ -74,14 +83,24 @@ export function demoCube(target: string): Cube {
 export function validateCube(cube: Cube): Cube {
   const { width, height, unit, bands, epochs } = cube
   if (!Number.isInteger(width) || !Number.isInteger(height) || width < 1 || height < 1 ||
+    (cube.pixelScaleArcsec !== undefined && (!Number.isFinite(cube.pixelScaleArcsec) || cube.pixelScaleArcsec <= 0)) ||
     typeof unit !== 'string' || !Array.isArray(bands) || !bands.length ||
     bands.some(band => !Number.isFinite(band.wavelength) || band.wavelength <= 0 ||
       !Number.isInteger(band.detector) || band.detector < 1 || band.detector > 6) ||
-    !Array.isArray(epochs) || epochs.length < 2 || epochs.some(epoch =>
+    !Array.isArray(epochs) || !epochs.length || epochs.some(epoch =>
       !Number.isFinite(Date.parse(epoch.date)) || !Array.isArray(epoch.planes) ||
+      (epoch.label !== undefined && typeof epoch.label !== 'string') ||
+      (epoch.observations !== undefined && (!Array.isArray(epoch.observations) ||
+        epoch.observations.length !== bands.length || epoch.observations.some(item =>
+          !Number.isFinite(Date.parse(item.date)) || typeof item.source !== 'string' ||
+          typeof item.cutout !== 'string' || !Number.isFinite(item.wavelength) || item.wavelength <= 0 ||
+          !Number.isFinite(item.bandwidth) || item.bandwidth <= 0))) ||
       epoch.planes.length !== bands.length || epoch.planes.some(plane =>
         !Array.isArray(plane) || plane.length !== width * height ||
-        plane.some(value => value !== null && !Number.isFinite(value))))) {
+        plane.some(value => value !== null && !Number.isFinite(value))) ||
+      (epoch.flags !== undefined && (!Array.isArray(epoch.flags) || epoch.flags.length !== bands.length ||
+        epoch.flags.some(plane => !Array.isArray(plane) || plane.length !== width * height ||
+          plane.some(value => value !== null && (!Number.isInteger(value) || value < 0 || value > 0xffffffff))))))) {
     throw new Error('Invalid observation cube')
   }
   return cube

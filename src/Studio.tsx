@@ -2,7 +2,8 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { stack, validateCube, type Coordinates, type Cube } from './studio-data'
 
 type Point = { x: number; y: number }
-type Mode = 'wipe' | 'blink' | 'difference'
+type Mode = 'wipe' | 'blink' | 'difference' | 'sum'
+const modes = [['wipe', 'Split view'], ['blink', 'Blink'], ['difference', 'Difference'], ['sum', 'Add epochs']] as const
 const tag = 'Unidentified Moving Object'
 
 function integerParam(name: string, limit: number, fallback: number) {
@@ -10,11 +11,11 @@ function integerParam(name: string, limit: number, fallback: number) {
   return value !== null && /^\d+$/.test(value) && Number(value) < limit ? Number(value) : fallback
 }
 
-function download(content: string, format: 'json' | 'csv') {
+function download(content: string, format: 'json' | 'csv', name = 'spherex-candidate') {
   const url = URL.createObjectURL(new Blob([content], { type: format === 'json' ? 'application/json' : 'text/csv' }))
   const link = document.createElement('a')
   link.href = url
-  link.download = `spherex-candidate.${format}`
+  link.download = `${name}.${format}`
   link.click()
   window.setTimeout(() => URL.revokeObjectURL(url), 1000)
 }
@@ -44,11 +45,15 @@ export function Studio({ cube, target, coords, zoom, onZoom, simulated = false, 
   const { width, height, bands, epochs, unit } = cube
   const query = new URLSearchParams(location.search)
   const [first, setFirst] = useState(integerParam('a', epochs.length, 0))
-  const [second, setSecond] = useState(integerParam('b', epochs.length, 1))
-  const [mode, setMode] = useState<Mode>(() => local || query.get('mode') === 'difference' ? 'difference' : query.get('mode') === 'blink' ? 'blink' : 'wipe')
+  const canCompare = epochs.length > 1
+  const [second, setSecond] = useState(integerParam('b', epochs.length, epochs[0].observations ? epochs.length - 1 : Math.min(1, epochs.length - 1)))
+  const [mode, setMode] = useState<Mode>(() => canCompare
+    ? modes.find(([value]) => value === query.get('mode'))?.[0] ?? (local ? 'difference' : 'wipe')
+    : 'wipe')
   const [band, setBand] = useState(() => {
-    const value = query.get('band') ?? 'detector-4'
-    return /^detector-[1-6]$/.test(value) || /^band-\d+$/.test(value) && Number(value.slice(5)) < bands.length ? value : 'detector-4'
+    const fallback = epochs[0].observations ? 'detector-6' : 'detector-4'
+    const value = query.get('band') ?? fallback
+    return /^detector-[1-6]$/.test(value) || /^band-\d+$/.test(value) && Number(value.slice(5)) < bands.length ? value : fallback
   })
   const [wipe, setWipe] = useState(integerParam('wipe', 101, 50))
   const [alternateBand, setAlternateBand] = useState(integerParam('bandB', bands.length, -1))
@@ -61,7 +66,7 @@ export function Studio({ cube, target, coords, zoom, onZoom, simulated = false, 
   const [tagged, setTagged] = useState(query.get('candidate') === '1')
   const [share, setShare] = useState(false)
   const [copied, setCopied] = useState(false)
-  const [spectrumEpoch, setSpectrumEpoch] = useState(() => query.get('spectrum') === 'a' ? 'a' : 'b')
+  const [spectrumEpoch, setSpectrumEpoch] = useState(() => canCompare && query.get('spectrum') !== 'a' ? 'b' : 'a')
   const canvas = useRef<HTMLCanvasElement>(null)
   const indices = useMemo(() => bands.flatMap((item, index) =>
     band === `detector-${item.detector}` || band === `band-${index}` ? [index] : []), [band, bands])
@@ -71,15 +76,16 @@ export function Studio({ cube, target, coords, zoom, onZoom, simulated = false, 
     const indices = selectedKey.split(',').map(Number)
     const a = stack(epochs[first].planes, indices, width * height)
     const b = stack(epochs[second].planes, alternateBand < 0 ? indices : [alternateBand], width * height)
-    const delta = Float32Array.from(a, (value, pixel) => {
-      if (alternateBand >= 0) return b[pixel] - value
+    const signA = mode === 'sum' ? 1 : -1
+    const combined = Float32Array.from(a, (value, pixel) => {
+      if (alternateBand >= 0) return b[pixel] + signA * value
       let sum = 0
       let count = 0
       for (const index of indices) {
         const before = epochs[first].planes[index][pixel]
         const after = epochs[second].planes[index][pixel]
         if (before === null || after === null || !Number.isFinite(before) || !Number.isFinite(after)) continue
-        sum += after - before
+        sum += after + signA * before
         count++
       }
       return count ? sum / count : NaN
@@ -88,21 +94,21 @@ export function Studio({ cube, target, coords, zoom, onZoom, simulated = false, 
     let high = -Infinity
     let differenceScale = 0
     for (let i = 0; i < a.length; i++) {
-      for (const value of [a[i], b[i]]) {
+      for (const value of mode === 'sum' ? [combined[i]] : [a[i], b[i]]) {
         if (!Number.isFinite(value)) continue
         low = Math.min(low, value)
         high = Math.max(high, value)
       }
-      if (Number.isFinite(delta[i])) differenceScale = Math.max(differenceScale, Math.abs(delta[i]))
+      if (Number.isFinite(combined[i])) differenceScale = Math.max(differenceScale, Math.abs(combined[i]))
     }
-    return { a, b, delta, low, range: high - low || 1, differenceScale: differenceScale || 1 }
-  }, [epochs, first, second, selectedKey, alternateBand, width, height])
+    return { a, b, combined, low, range: high - low || 1, differenceScale: differenceScale || 1 }
+  }, [epochs, first, second, selectedKey, alternateBand, width, height, mode])
 
   useEffect(() => {
-    if (mode !== 'blink') return
+    if (!canCompare || mode !== 'blink') return
     const timer = window.setInterval(() => setBlink(value => !value), 750)
     return () => window.clearInterval(timer)
-  }, [mode])
+  }, [mode, canCompare])
 
   useEffect(() => {
     const ctx = canvas.current?.getContext('2d')
@@ -115,13 +121,15 @@ export function Studio({ cube, target, coords, zoom, onZoom, simulated = false, 
         const source = sourceY * width + sourceX
         const offset = (y * width + x) * 4
         const showSecond = mode === 'blink' ? blink : x >= width * wipe / 100
-        const value = mode === 'difference' ? pixels.delta[source] : (showSecond ? pixels.b : pixels.a)[source]
+        const value = !canCompare ? pixels.a[source] : mode === 'difference' || mode === 'sum'
+          ? pixels.combined[source] : (showSecond ? pixels.b : pixels.a)[source]
         if (Number.isFinite(value)) {
-          const level = mode === 'difference' ? Math.abs(value) / pixels.differenceScale : (value - pixels.low) / pixels.range
-          const brightness = Math.round(255 * (mode === 'difference' ? level : Math.sqrt(level)))
-          image.data[offset] = mode === 'difference' && value < 0 ? brightness * .2 : brightness
-          image.data[offset + 1] = mode === 'difference' ? brightness * .63 : brightness
-          image.data[offset + 2] = mode === 'difference' && value > 0 ? brightness * .22 : brightness
+          const difference = canCompare && mode === 'difference'
+          const level = difference ? Math.abs(value) / pixels.differenceScale : (value - pixels.low) / pixels.range
+          const brightness = Math.round(255 * (difference ? level : Math.sqrt(level)))
+          image.data[offset] = difference && value < 0 ? brightness * .2 : brightness
+          image.data[offset + 1] = difference ? brightness * .63 : brightness
+          image.data[offset + 2] = difference && value > 0 ? brightness * .22 : brightness
         } else {
           image.data[offset + 2] = 28
         }
@@ -135,22 +143,33 @@ export function Studio({ cube, target, coords, zoom, onZoom, simulated = false, 
       ctx.strokeStyle = tagged ? '#ffb859' : '#a0e8de'
       ctx.strokeRect(x - 3, y - 3, 6, 6)
     }
-  }, [blink, height, mode, pixels, point, tagged, width, wipe, zoom])
+  }, [blink, height, mode, pixels, point, tagged, width, wipe, zoom, canCompare])
 
   const activeEpoch = spectrumEpoch === 'a' ? first : second
   const pixelIndex = point ? point.y * width + point.x : -1
-  const spectrum = point ? bands.flatMap(({ wavelength }, index) => {
+  const spectrum = point ? bands.flatMap((band, index) => {
+    const wavelength = epochs[activeEpoch].observations?.[index].wavelength ?? band.wavelength
     const value = epochs[activeEpoch].planes[index][pixelIndex]
-    return value === null || !Number.isFinite(value) ? [] : [{ x: wavelength, label: `${wavelength.toFixed(3)} µm`, value }]
+    const flags = epochs[activeEpoch].flags?.[index][pixelIndex]
+    return value === null || !Number.isFinite(value) ? [] : [{
+      x: wavelength, label: `${wavelength.toFixed(3)} µm · D${band.detector}`, value, detector: band.detector, flags,
+    }]
   }).sort((a, b) => a.x - b.x) : []
   const curveBand = selected[Math.floor(selected.length / 2)]
-  const lightCurve = point ? epochs.flatMap(({ date, planes }) => {
-    const value = planes[curveBand][pixelIndex]
+  const lightCurve = point ? epochs.flatMap(epoch => {
+    const date = epoch.observations?.[curveBand].date ?? epoch.date
+    const value = epoch.planes[curveBand][pixelIndex]
     return value === null || !Number.isFinite(value) ? [] : [{ x: Date.parse(date), label: date, value }]
   }).sort((a, b) => a.x - b.x) : []
+  const observationsA = epochs[first].observations
+  const observationsB = epochs[second].observations
+  const observationA = observationsA?.[selected[0]]
+  const observationB = observationsB?.[alternateBand < 0 ? selected[0] : alternateBand]
 
   function viewUrl() {
     const url = new URL(location.href)
+    const field = url.searchParams.get('field')
+    const embed = url.searchParams.get('embed')
     url.search = new URLSearchParams({
       ra: String(coords.ra), dec: String(coords.dec), zoom: String(zoom), a: String(first), b: String(second),
       band: indices.length ? band : 'band-0', mode, wipe: String(wipe), spectrum: spectrumEpoch,
@@ -158,6 +177,9 @@ export function Studio({ cube, target, coords, zoom, onZoom, simulated = false, 
       ...(simulated ? { demo: target } : {}),
       ...(point ? { x: String(point.x), y: String(point.y) } : {}),
       ...(point && tagged ? { candidate: '1' } : {}),
+      ...(!canCompare ? { product: 'spectrum' } : {}),
+      ...(field ? { field } : {}),
+      ...(embed === '1' ? { embed } : {}),
     }).toString()
     url.hash = 'explorer'
     return url.href
@@ -186,9 +208,11 @@ export function Studio({ cube, target, coords, zoom, onZoom, simulated = false, 
     if (!point || !tagged) return
     const report = {
       label: tag, target, simulated, fieldRa: coords.ra, fieldDec: coords.dec, pixelX: point.x, pixelY: point.y,
-      epochA: epochs[first].date, epochB: epochs[second].date, sourceA: epochs[first].source ?? '',
-      sourceB: epochs[second].source ?? '', wavelengthsMicrons: selected.map(index => bands[index].wavelength).join(';'),
-      wavelengthBMicrons: alternateBand < 0 ? 'same as A' : bands[alternateBand].wavelength,
+      epochA: observationA?.date ?? epochs[first].date, epochB: observationB?.date ?? epochs[second].date,
+      sourceA: observationA?.source ?? epochs[first].source ?? '',
+      sourceB: observationB?.source ?? epochs[second].source ?? '',
+      wavelengthsMicrons: selected.map(index => observationsA?.[index].wavelength ?? bands[index].wavelength).join(';'),
+      wavelengthBMicrons: observationB?.wavelength ?? (alternateBand < 0 ? 'same as A' : bands[alternateBand].wavelength),
       ...(local ? {} : { url: viewUrl() }),
     }
     const csv = (value: unknown) => {
@@ -209,29 +233,33 @@ export function Studio({ cube, target, coords, zoom, onZoom, simulated = false, 
 
   return <div className="studio">
     <div className="studio-controls">
-      <label>Epoch A<select value={first} onChange={event => setFirst(Number(event.target.value))}>
-        {epochs.map(({ date }, index) => <option key={index} value={index}>{date}</option>)}
+      {canCompare && <><label>Epoch A<select value={first} onChange={event => setFirst(Number(event.target.value))}>
+        {epochs.map(({ date, label }, index) => <option key={index} value={index}>{label ?? date}</option>)}
       </select></label>
       <label>Epoch B<select value={second} onChange={event => setSecond(Number(event.target.value))}>
-        {epochs.map(({ date }, index) => <option key={index} value={index}>{date}</option>)}
-      </select></label>
+        {epochs.map(({ date, label }, index) => <option key={index} value={index}>{label ?? date}</option>)}
+      </select></label></>}
       <label>Infrared bands<select value={indices.length ? band : 'band-0'} onChange={event => setBand(event.target.value)}>
-        <optgroup label="Detector averages">{[1, 2, 3, 4, 5, 6].filter(detector => bands.some(item => item.detector === detector)).map(detector =>
-          <option key={detector} value={`detector-${detector}`}>Detector {detector} stack</option>)}</optgroup>
-        <optgroup label="Individual bands">{bands.map(({ wavelength }, index) =>
-          <option key={index} value={`band-${index}`}>Band {index + 1} · {wavelength.toFixed(3)} µm</option>)}</optgroup>
+        <optgroup label="Detector averages">{[1, 2, 3, 4, 5, 6].filter(detector => bands.some(item => item.detector === detector)).map(detector => {
+          const count = bands.filter(item => item.detector === detector).length
+          return <option key={detector} value={`detector-${detector}`}>Detector {detector}{count > 1 ? ` · ${count} channels` : ''}</option>
+        })}</optgroup>
+        {[1, 2, 3, 4, 5, 6].filter(detector => bands.some(item => item.detector === detector)).map(detector =>
+          <optgroup key={detector} label={`Detector ${detector} channels`}>{bands.map(({ wavelength, detector: sourceDetector }, index) =>
+            sourceDetector === detector && <option key={index} value={`band-${index}`}>Band {index + 1} · {wavelength.toFixed(3)} µm</option>)}</optgroup>)}
       </select></label>
-      <label>Epoch B band<select value={alternateBand} onChange={event => setAlternateBand(Number(event.target.value))}>
-        <option value={-1}>Match Epoch A</option>
+      {canCompare && <label>Epoch B band<select value={alternateBand} onChange={event => setAlternateBand(Number(event.target.value))}>
+        <option value={-1}>{observationsB ? 'Same detector' : 'Match Epoch A'}</option>
         {bands.map(({ wavelength }, index) =>
           <option key={index} value={index}>Band {index + 1} · {wavelength.toFixed(3)} µm</option>)}
-      </select></label>
-      <label>Zoom<select value={zoom} onChange={event => onZoom(Number(event.target.value))}>
-        {[1, 2, 3, 4, 5].map(value => <option key={value} value={value}>{value}×</option>)}
+      </select></label>}
+      <label>{cube.pixelScaleArcsec ? 'Field width' : 'Zoom'}<select value={zoom} onChange={event => onZoom(Number(event.target.value))}>
+        {[1, 2, 3, 4, 5].map(value => <option key={value} value={value}>{cube.pixelScaleArcsec
+          ? `${(width * cube.pixelScaleArcsec / (60 * value)).toFixed(2)}′` : `${value}×`}</option>)}
       </select></label>
     </div>
     <div className="studio-modes" aria-label="Comparison mode">
-      {([['wipe', 'Split view'], ['blink', 'Blink'], ['difference', 'Difference']] as const).map(([value, label]) =>
+      {canCompare && modes.map(([value, label]) =>
         <button key={value} aria-pressed={mode === value} onClick={() => { setMode(value); setBlink(false) }}>{label}</button>)}
       {!local && <button onClick={copyView}>{copied ? 'Link copied' : 'Copy view link'}</button>}
     </div>
@@ -255,19 +283,41 @@ export function Studio({ cube, target, coords, zoom, onZoom, simulated = false, 
           y: Math.max(0, Math.min(height - 1, (point?.y ?? Math.floor(height / 2)) + step[1])),
         })
       }} />
-    {mode === 'wipe' && <label className="studio-wipe">Split between Epoch A and B
+    {canCompare && mode === 'wipe' && <label className="studio-wipe">Split between Epoch A and B
       <input type="range" min="0" max="100" value={wipe} onChange={event => setWipe(Number(event.target.value))} />
     </label>}
-    <p className="studio-help">{mode === 'difference' ? 'Epoch B − A. Amber brightened, blue faded, and black shows near-zero change. Dark navy marks missing samples.'
+    <p className="studio-help">{!canCompare ? 'DR1 survey mosaic. Dark navy marks missing samples.'
+      : mode === 'sum' ? 'Epoch A + B using pixels with paired measurements. Stationary sources reinforce across epochs.'
+      : mode === 'difference' ? 'Epoch B − A. Amber brightened, blue faded, and black shows near-zero change. Dark navy marks missing samples.'
       : mode === 'blink' ? `Showing epoch ${blink ? 'B' : 'A'}` : 'Epoch A on the left, Epoch B on the right.'} Click the image to sample a pixel.</p>
     {alternateBand >= 0 && <p className="studio-help">Different wavelengths can leave residuals around stationary stars. Match bands to investigate motion.</p>}
+    {cube.note && <p className="studio-help">{cube.note}</p>}
+    {!canCompare && epochs[0].source && <p><a href={epochs[0].source}>Original IRSA FITS cube</a></p>}
+    {observationA && observationB && <details className="details">
+      <summary>NASA/IPAC IRSA observations</summary>
+      {[observationA, observationB].map((item, index) => <p key={index}>
+        Epoch {index === 0 ? 'A' : 'B'} · {item.date} · {item.wavelength.toFixed(4)} µm
+        {' · '}<a href={item.source}>Original FITS</a>
+        {' · '}<a href={item.cutout} download>Compressed FITS cutout</a>
+      </p>)}
+      <p>Each epoch groups six exposures from the same survey period. Passband and point-spread function differences can leave residuals in the difference image.</p>
+    </details>}
     {point && <div className="studio-report">
       <h3>Pixel spectrum · ({point.x}, {point.y})</h3>
-      <label className="spectrum-epoch">Spectrum epoch<select value={spectrumEpoch} onChange={event => setSpectrumEpoch(event.target.value)}>
+      <p>{spectrum.length} of {bands.length} channels have a measured sample at this pixel.</p>
+      {canCompare && <label className="spectrum-epoch">Spectrum epoch<select value={spectrumEpoch} onChange={event => setSpectrumEpoch(event.target.value)}>
         <option value="a">Epoch A · {epochs[first].date}</option>
         <option value="b">Epoch B · {epochs[second].date}</option>
-      </select></label>
+      </select></label>}
       <PixelChart samples={spectrum} axis="Wavelength" unit={unit} />
+      {spectrum.length > 0 && <button onClick={() => download([
+        'wavelength_um,detector,brightness,flags',
+        ...spectrum.map(sample => [sample.x, sample.detector, sample.value, sample.flags ?? ''].join(',')),
+      ].join('\n'), 'csv', 'spherex-spectrum')}>Download spectrum CSV</button>}
+      {epochs[first].flags && <PixelFlags cube={cube} epoch={first} indices={selected} pixel={pixelIndex} />}
+      {canCompare && epochs[second].flags && <PixelFlags cube={cube} epoch={second}
+        indices={alternateBand < 0 ? selected : [alternateBand]} pixel={pixelIndex} />}
+      {canCompare && <>
       <h3>Pixel light curve</h3>
       <p>Band {curveBand + 1} · {bands[curveBand].wavelength.toFixed(3)} µm across observation dates</p>
       <PixelChart samples={lightCurve} axis="Observation date" unit={unit} />
@@ -280,8 +330,20 @@ export function Studio({ cube, target, coords, zoom, onZoom, simulated = false, 
         </>}
       </div>
       {tagged && <p>{simulated ? 'Simulated candidate' : 'Candidate awaiting review'}</p>}
+      </>}
     </div>}
   </div>
+}
+
+function PixelFlags({ cube, epoch, indices, pixel }: { cube: Cube; epoch: number; indices: number[]; pixel: number }) {
+  const values = indices.map(index => cube.epochs[epoch].flags?.[index][pixel])
+    .filter((value): value is number => value !== undefined && value !== null)
+  if (!values.length) return <p>Quality flags unavailable at the selected pixel.</p>
+  const mask = values.reduce((combined, value) => (combined | value) >>> 0, 0)
+  const flags = Array.from({ length: 32 }, (_, bit) => bit).filter(bit => (mask >>> bit) & 1)
+  return <p>Quality flags · {cube.epochs[epoch].label ?? cube.epochs[epoch].date} · {flags.length
+    ? flags.map(bit => cube.flagNames?.[bit] ?? `Bit ${bit}`).join(', ')
+    : 'No bits set'} · 0x{mask.toString(16).padStart(8, '0')}</p>
 }
 
 function PixelChart({ samples, axis, unit }: {

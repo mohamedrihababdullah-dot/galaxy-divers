@@ -4,11 +4,13 @@ import './style.css'
 import { ObservationStudio, Studio } from './Studio'
 import { SkyMap } from './SkyMap'
 import { SkyGuide } from './SkyGuide'
+import { ArchiveSearch } from './ArchiveSearch'
 import { ObservationUpload, saveObservation, type UploadedObservation } from './ObservationUpload'
 import { demoCube, parseCoordinates } from './studio-data'
 
 type Frame = { image: string; observedAt: string; wavelength: string; source: string }
-type Sequence = { target: string; ra: number; dec: number; frames: Frame[]; cube?: string }
+type Field = { id: string; label: string; cube: string }
+type Sequence = { target: string; ra: number; dec: number; frames: Frame[]; cube?: string; spectrum?: string; fields?: Field[] }
 
 const targets = ['Barnard’s Star', 'Epsilon Indi B', 'WISE 0855', 'RW Aurigae', 'R Draconis']
 const demo = { ra: 133.795129, dec: -7.245147 }
@@ -16,7 +18,6 @@ const query = new URLSearchParams(location.search)
 
 const presets = [
   { target: 'WISE 0855', ...demo },
-  { target: 'Barnard’s Star', ...parseCoordinates('17h57m48.498s', '+4d41m36.114s')! },
   { target: 'RW Aurigae', ...parseCoordinates('05h07m49.566s', '+30d24m05.177s')! },
 ]
 
@@ -30,23 +31,30 @@ function App() {
   const [demoTarget, setDemoTarget] = useState(() => presets.find(item => item.target === query.get('demo'))?.target ?? (query.has('ra') || query.has('dec') ? '' : presets[0].target))
   const [zoom, setZoom] = useState(() => /^[1-5]$/.test(query.get('zoom') ?? '') ? Number(query.get('zoom')) : 1)
   const [viewKey, setViewKey] = useState(0)
+  const [product, setProduct] = useState(query.get('product') === 'spectrum' ? 'spectrum' : 'epochs')
+  const [field, setField] = useState(query.get('field') ?? '')
+  const [embed] = useState(query.get('embed') === '1')
   const demoData = useMemo(() => demoTarget ? demoCube(demoTarget) : null, [demoTarget])
   const demoPreset = presets.find(item => item.target === demoTarget) ?? presets[0]
   const [error, setError] = useState('')
   const [frame, setFrame] = useState(0)
   const [playing, setPlaying] = useState(false)
   const sequence = position && sequences.find((item) =>
-    Math.abs(item.ra - position.ra) < 0.000001 && Math.abs(item.dec - position.dec) < 0.000001)
+    (Math.abs(item.ra - position.ra) < 0.000001 && Math.abs(item.dec - position.dec) < 0.000001) ||
+    query.get('demo') === item.target && item.target === 'Barnard’s Star' && !viewKey)
   const frames = sequence ? [...sequence.frames].sort((a, b) =>
     Date.parse(a.observedAt) - Date.parse(b.observedAt)) : []
   const count = frames.length
   const current = frames[frame]
+  const selectedField = sequence && sequence.fields?.find(item => item.id === field)
+  const spectrum = sequence && (product === 'spectrum' || !sequence.cube) && sequence.spectrum
+  const cubeUrl = sequence && (spectrum || selectedField?.cube || sequence.cube)
 
   useEffect(() => {
     if (query.has('ra') || query.has('dec') || location.hash === '#explorer') {
       document.getElementById('explorer')?.scrollIntoView({ behavior: 'instant' })
     }
-    fetch('/data/manifest.json')
+    fetch('/data/manifest.json', { cache: 'no-cache' })
       .then((response) => {
         if (!response.ok) throw new Error('Manifest unavailable')
         return response.json() as Promise<{ sequences: Sequence[] }>
@@ -73,11 +81,14 @@ function App() {
     setFrame(0)
     setPlaying(false)
     setError('')
+    setProduct('epochs')
+    setField('')
     const url = new URL(location.href)
     url.search = new URLSearchParams({
       ra: String(coords.ra), dec: String(coords.dec), zoom: String(zoom), ...(target ? { demo: target } : {}),
     }).toString()
     if (mode) url.searchParams.set('mode', mode)
+    if (embed) url.searchParams.set('embed', '1')
     url.hash = 'explorer'
     setRa(String(coords.ra))
     setDec(String(coords.dec))
@@ -93,7 +104,17 @@ function App() {
 
   }
 
-  return <>
+  function changeDataset(name: 'product' | 'field', value: string) {
+    if (name === 'product') setProduct(value)
+    else setField(value)
+    const url = new URL(location.href)
+    for (const key of ['x', 'y', 'candidate', 'a', 'b', 'band', 'bandB']) url.searchParams.delete(key)
+    if (value) url.searchParams.set(name, value)
+    else url.searchParams.delete(name)
+    history.replaceState(null, '', url)
+  }
+
+  return <div className={embed ? 'embedded' : undefined}>
     <header className="site-header">
       <a className="brand" href="#home">
         <span className="galaxy-mark" aria-hidden="true" />
@@ -164,14 +185,14 @@ function App() {
           <label className="target-select">Quick-select target
             <select value={demoTarget || sequence && sequence.target || ''} onChange={event => {
               const target = event.target.value
-              const available = sequences.find(item => item.target === target && (item.cube || item.frames.length))
+              const available = sequences.find(item => item.target === target && (item.cube || item.spectrum || item.frames.length))
               const preset = presets.find(item => item.target === target)
-              if (available) select(available)
+              if (available) select(available, '', available.target === 'Barnard’s Star' ? 'blink' : undefined)
               else if (preset) select(preset, target)
             }}>
               <option value="" disabled>Choose a target</option>
-              {targets.map(target => {
-                const ready = sequences.some(item => item.target === target && (item.cube || item.frames.length))
+              {[...new Set([...targets, ...sequences.map(item => item.target)])].map(target => {
+                const ready = sequences.some(item => item.target === target && (item.cube || item.spectrum || item.frames.length))
                 const hasDemo = presets.some(item => item.target === target)
                 return <option key={target} value={target} disabled={!ready && !hasDemo}>
                   {target}{ready ? '' : hasDemo ? ' · simulated' : ' · awaiting data'}
@@ -185,18 +206,33 @@ function App() {
             <h2>{upload?.target || demoTarget || (sequence ? sequence.target : 'Observation search')}</h2>
             {upload && <button onClick={() => saveObservation(upload)}>Save observation JSON</button>}
             {demoTarget && <span className="badge">Simulated data</span>}
+            {!upload && !demoTarget && sequence && <span className="badge">NASA/IPAC IRSA</span>}
             {!upload && !demoTarget && !sequence && <button onClick={() => select(presets[0], presets[0].target)}>Open demo</button>}
           </div>
+          {!upload && !demoTarget && sequence && (sequence.spectrum || sequence.fields?.length) && <div className="dataset-controls">
+            {sequence.spectrum && <label>SPHEREx product
+              <select value={spectrum ? 'spectrum' : 'epochs'} onChange={event => changeDataset('product', event.target.value)}>
+                {sequence.cube && <option value="epochs">Multi-epoch images</option>}
+                <option value="spectrum">DR1 · 102-channel mosaic</option>
+              </select>
+            </label>}
+            {!spectrum && !!sequence.fields?.length && <label>Download field
+              <select value={selectedField ? selectedField.id : ''} onChange={event => changeDataset('field', event.target.value)}>
+                <option value="">Standard field · 2.70′</option>
+                {sequence.fields.map(item => <option key={item.id} value={item.id}>{item.label}</option>)}
+              </select>
+            </label>}
+          </div>}
           {upload ? <Studio key={viewKey} cube={upload.cube} target={upload.target} coords={upload.coords} zoom={zoom} onZoom={changeZoom} local />
             : demoData ? <Studio key={viewKey} cube={demoData} target={demoTarget} coords={demoPreset} zoom={zoom} onZoom={changeZoom} simulated />
-            : sequence && sequence.cube ? <ObservationStudio key={viewKey} url={sequence.cube} target={sequence.target} coords={sequence} zoom={zoom} onZoom={changeZoom} />
+            : sequence && cubeUrl ? <ObservationStudio key={`${viewKey}:${cubeUrl}`} url={cubeUrl} target={sequence.target} coords={sequence} zoom={zoom} onZoom={changeZoom} />
             : <>
           <div className="sky">
             {current
               ? <img src={current.image} alt={`SPHEREx observation of ${sequence?.target ?? 'selected sky field'}`} />
               : <p role="status">{loadState === 'loading' ? 'Loading observations…'
                 : loadState === 'error' ? 'Could not load the observation catalog. Reload to retry.'
-                : 'No prepared observations at these coordinates. Live archive search is pending.'}</p>}
+                : 'No prepared observations at these coordinates. Search IRSA below for available FITS files.'}</p>}
           </div>
           {count > 0 && <div className="playback">
             <button disabled={count < 2} onClick={() => setPlaying(!playing)}>{playing ? 'Pause' : 'Play'}</button>
@@ -212,13 +248,14 @@ function App() {
         </section>
       </div>
       <SkyMap coords={position ?? demoPreset} onSearch={coords => select(coords)} />
+      <ArchiveSearch coords={position ?? demoPreset} />
       </section>
       <section className="mission-notes" aria-label="About the project">
         <div id="planet-x"><h2>Planet X</h2><p>Planet X is a hypothetical planet beyond Neptune. The red planet in the hero is an illustration.</p></div>
         <div id="about"><h2>About Galaxy Divers</h2><p>We’re building an infrared sky explorer for the NASA International Space Apps Challenge.</p></div>
       </section>
     </main>
-  </>
+  </div>
 }
 
 createRoot(document.getElementById('root')!).render(<App />)
