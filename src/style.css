@@ -162,6 +162,15 @@ h2 { font-size: 17px; margin: 0; }
 .layout { display: grid; grid-template-columns: 275px minmax(0, 1fr); gap: 18px; align-items: start; }
 .panel { background: #111b29; border: 1px solid var(--border); border-radius: 16px; overflow: hidden; }
 aside { padding: 20px; }
+.explorer-sidebar { display: grid; gap: 14px; }
+.telescope-picker .studio-modes { margin-bottom: 0; }
+.telescope-picker p, .telescope-view p { color: var(--muted); font-size: 13px; }
+.telescope-picker p { margin-bottom: 0; }
+.telescope-comparisons:not([hidden]) { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); gap: 14px; padding: 0 16px 16px; }
+.telescope-view { border: 1px solid var(--border); border-radius: 8px; padding: 12px; min-width: 0; }
+.telescope-view h3 { margin: 0 0 10px; }
+.telescope-image { background: #060a12; display: grid; place-items: center; aspect-ratio: 1; }
+.telescope-image img:not([hidden]), .telescope-image svg { display: block; width: 100%; height: auto; }
 form { display: grid; gap: 13px; margin-top: 16px; }
 label { display: grid; gap: 6px; color: var(--muted); font-size: 13px; }
 input, button { font: inherit; }
@@ -195,6 +204,11 @@ select { width: 100%; padding: 8px; border: 1px solid var(--border); border-radi
 .studio-modes { display: flex; flex-wrap: wrap; gap: 7px; margin-block: 12px; }
 .studio-modes button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
 .studio-sky { display: block; width: 100%; height: auto; background: #060a12; border-radius: 8px; cursor: crosshair; }
+.studio-playback { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
+.studio-playback span, .studio-playback a { font-size: 13px; }
+.studio-playback span { color: var(--muted); font-variant-numeric: tabular-nums; }
+.studio-playback .playback-scope { display: inline-flex; align-items: center; gap: 6px; }
+.playback-scope input { width: auto; accent-color: var(--accent); }
 .studio-wipe { margin-top: 10px; }
 .studio-wipe input { width: 100%; accent-color: var(--accent); }
 .studio-help, .studio-report p, .spectrum figcaption { color: var(--muted); font-size: 13px; }
@@ -245,6 +259,7 @@ select { width: 100%; padding: 8px; border: 1px solid var(--border); border-radi
   .hero-content { padding-bottom: 35px; }
   .layout { grid-template-columns: 1fr; }
   .viewer { grid-row: 1; }
+  .layout:has(.telescope-picker) .viewer { grid-row: 2; }
 }
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }

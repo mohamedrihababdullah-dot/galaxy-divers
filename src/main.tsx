@@ -5,6 +5,7 @@ import { ObservationStudio, Studio } from './Studio'
 import { SkyMap } from './SkyMap'
 import { SkyGuide } from './SkyGuide'
 import { ArchiveSearch } from './ArchiveSearch'
+import { TelescopeComparison, type Telescope } from './TelescopeComparison'
 import { ObservationUpload, saveObservation, type UploadedObservation } from './ObservationUpload'
 import { demoCube, parseCoordinates } from './studio-data'
 
@@ -13,6 +14,7 @@ type Field = { id: string; label: string; cube: string }
 type Sequence = { target: string; ra: number; dec: number; frames: Frame[]; cube?: string; spectrum?: string; fields?: Field[] }
 
 const targets = ['Barnard’s Star', 'Epsilon Indi B', 'WISE 0855', 'RW Aurigae', 'R Draconis']
+const telescopes = [{ id: 'gaia', label: 'Gaia' }, { id: 'wise', label: 'WISE' }] as const
 const demo = { ra: 133.795129, dec: -7.245147 }
 const query = new URLSearchParams(location.search)
 
@@ -31,6 +33,7 @@ function App() {
   const [demoTarget, setDemoTarget] = useState(() => presets.find(item => item.target === query.get('demo'))?.target ?? (query.has('ra') || query.has('dec') ? '' : presets[0].target))
   const [zoom, setZoom] = useState(() => /^[1-5]$/.test(query.get('zoom') ?? '') ? Number(query.get('zoom')) : 1)
   const [viewKey, setViewKey] = useState(0)
+  const [comparisons, setComparisons] = useState<Telescope[]>([])
   const [product, setProduct] = useState(query.get('product') === 'spectrum' ? 'spectrum' : 'epochs')
   const [field, setField] = useState(query.get('field') ?? '')
   const [embed] = useState(query.get('embed') === '1')
@@ -46,9 +49,12 @@ function App() {
     Date.parse(a.observedAt) - Date.parse(b.observedAt)) : []
   const count = frames.length
   const current = frames[frame]
-  const selectedField = sequence && sequence.fields?.find(item => item.id === field)
+  const defaultField = !viewKey && !query.has('x') && !query.has('y') && query.get('field') === null && sequence && sequence.target === 'Barnard’s Star'
+    ? 'surroundings' : ''
+  const selectedField = sequence && sequence.fields?.find(item => item.id === (field || defaultField))
   const spectrum = sequence && (product === 'spectrum' || !sequence.cube) && sequence.spectrum
   const cubeUrl = sequence && (spectrum || selectedField?.cube || sequence.cube)
+  const isBarnard = !upload && sequence?.target === 'Barnard’s Star'
 
   useEffect(() => {
     if (query.has('ra') || query.has('dec') || location.hash === '#explorer') {
@@ -73,21 +79,26 @@ function App() {
     return () => window.clearInterval(timer)
   }, [playing, count])
 
-  function select(coords: typeof demo, target = '', mode?: 'blink' | 'difference') {
+  function select(coords: typeof demo, target = '', mode?: 'blink' | 'difference', initialField = '') {
     setUpload(null)
     setDemoTarget(target)
     setViewKey(value => value + 1)
+    setComparisons([])
     setPosition(coords)
     setFrame(0)
     setPlaying(false)
     setError('')
     setProduct('epochs')
-    setField('')
+    setField(initialField)
     const url = new URL(location.href)
     url.search = new URLSearchParams({
-      ra: String(coords.ra), dec: String(coords.dec), zoom: String(zoom), ...(target ? { demo: target } : {}),
+      ra: String(coords.ra), dec: String(coords.dec), zoom: String(initialField ? 1 : zoom), ...(target ? { demo: target } : {}),
     }).toString()
     if (mode) url.searchParams.set('mode', mode)
+    if (initialField) {
+      url.searchParams.set('field', initialField)
+      setZoom(1)
+    }
     if (embed) url.searchParams.set('embed', '1')
     url.hash = 'explorer'
     setRa(String(coords.ra))
@@ -106,11 +117,10 @@ function App() {
 
   function changeDataset(name: 'product' | 'field', value: string) {
     if (name === 'product') setProduct(value)
-    else setField(value)
+    else setField(value || 'standard')
     const url = new URL(location.href)
     for (const key of ['x', 'y', 'candidate', 'a', 'b', 'band', 'bandB']) url.searchParams.delete(key)
-    if (value) url.searchParams.set(name, value)
-    else url.searchParams.delete(name)
+    url.searchParams.set(name, value || 'standard')
     history.replaceState(null, '', url)
   }
 
@@ -165,6 +175,7 @@ function App() {
         requestAnimationFrame(() => document.getElementById('observation-viewer')?.scrollIntoView({ block: 'start' }))
       }} />
       <div className="layout">
+        <div className="explorer-sidebar">
         <aside className="panel">
           <h2>Sky coordinates</h2>
           <form onSubmit={(event) => {
@@ -187,7 +198,10 @@ function App() {
               const target = event.target.value
               const available = sequences.find(item => item.target === target && (item.cube || item.spectrum || item.frames.length))
               const preset = presets.find(item => item.target === target)
-              if (available) select(available, '', available.target === 'Barnard’s Star' ? 'blink' : undefined)
+              if (available) {
+                const barnard = available.target === 'Barnard’s Star'
+                select(available, '', barnard ? 'blink' : undefined, barnard ? 'surroundings' : '')
+              }
               else if (preset) select(preset, target)
             }}>
               <option value="" disabled>Choose a target</option>
@@ -201,6 +215,17 @@ function App() {
             </select>
           </label>
         </aside>
+        <aside className="panel telescope-picker" aria-labelledby="telescope-heading">
+          <h2 id="telescope-heading">Compare telescopes</h2>
+          <div className="studio-modes">
+            {telescopes.map(({ id, label }) => <button key={id} type="button"
+              disabled={!isBarnard} aria-pressed={isBarnard && comparisons.includes(id)}
+              aria-controls="telescope-comparisons" onClick={() => setComparisons(active =>
+                active.includes(id) ? active.filter(item => item !== id) : [...active, id])}>{label}</button>)}
+          </div>
+          <p>{isBarnard ? 'Show Gaia’s motion plot or blink two WISE images.' : 'Select Barnard’s Star to compare Gaia and WISE.'}</p>
+        </aside>
+        </div>
         <section id="observation-viewer" className="panel viewer" aria-label="Observation viewer">
           <div className="viewer-head">
             <h2>{upload?.target || demoTarget || (sequence ? sequence.target : 'Observation search')}</h2>
@@ -208,6 +233,10 @@ function App() {
             {demoTarget && <span className="badge">Simulated data</span>}
             {!upload && !demoTarget && sequence && <span className="badge">NASA/IPAC IRSA</span>}
             {!upload && !demoTarget && !sequence && <button onClick={() => select(presets[0], presets[0].target)}>Open demo</button>}
+          </div>
+          <div id="telescope-comparisons" className="telescope-comparisons" hidden={!isBarnard || comparisons.length === 0}>
+            {isBarnard && telescopes.filter(({ id }) => comparisons.includes(id)).map(({ id }) =>
+              <TelescopeComparison key={id} telescope={id} />)}
           </div>
           {!upload && !demoTarget && sequence && (sequence.spectrum || sequence.fields?.length) && <div className="dataset-controls">
             {sequence.spectrum && <label>SPHEREx product
@@ -225,7 +254,7 @@ function App() {
           </div>}
           {upload ? <Studio key={viewKey} cube={upload.cube} target={upload.target} coords={upload.coords} zoom={zoom} onZoom={changeZoom} local />
             : demoData ? <Studio key={viewKey} cube={demoData} target={demoTarget} coords={demoPreset} zoom={zoom} onZoom={changeZoom} simulated />
-            : sequence && cubeUrl ? <ObservationStudio key={`${viewKey}:${cubeUrl}`} url={cubeUrl} target={sequence.target} coords={sequence} zoom={zoom} onZoom={changeZoom} />
+            : sequence && cubeUrl ? <ObservationStudio key={`${viewKey}:${cubeUrl}`} url={cubeUrl} target={sequence.target} coords={sequence} zoom={zoom} onZoom={changeZoom} field={selectedField ? selectedField.id : 'standard'} />
             : <>
           <div className="sky">
             {current

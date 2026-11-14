@@ -8,6 +8,7 @@
       "cube": "/data/barnards-star/cube.json",
       "spectrum": "/data/barnards-star/dr1-spectrum.json",
       "fields": [
+        { "id": "surroundings", "label": "Surrounding stars · 7.97′", "cube": "/data/barnards-star/cube-surroundings.json.gz" },
         { "id": "wide", "label": "Wide field · 3.10′", "cube": "/data/barnards-star/cube-wide.json" }
       ]
     }

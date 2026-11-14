@@ -14,11 +14,15 @@ In the Aladin Lite map, choose a field width and turn on Gaia DR3 or AllWISE to 
 
 ## Adding observations
 
+The **Compare telescopes** buttons for Barnard’s Star open independently. WISE blinks two display frames extracted from the [published 2010–2022 NASA WISE sequence](https://commons.wikimedia.org/wiki/File:Barnards_Pfeilstern-2010-2022.webm) at 0.5 and 32 seconds. The Gaia plot uses the 1,000 brightest Gaia DR3 sources returned by an ESA Archive cone search at RA 269.446°, Dec 4.747°, radius 0.07°. It projects the catalog positions from J2016.0 to J2010.0 and J2022.0 using linear proper motion. The teal ring identifies Gaia source 4472832130942575872.
+
 Select **Barnard’s Star** in the Studio to compare 18 calibrated NASA/IPAC IRSA SPHEREx exposures, one per detector in each of three survey periods. The archive links and losslessly gzip-compressed FITS cutouts are available under **NASA/IPAC IRSA observations**. The Studio loads a prepared cube on demand. Each plane was decoded with Astropy and reprojected onto the same north-up 2-arcsecond grid. The finer display grid retains the instrument's original resolution.
 
 To rebuild the cube from the bundled cutouts, install Astropy and SciPy and run `python scripts/prepare-barnards-star.py`. The detector views use exposures selected for similar passbands near the star. The source dates and measured wavelengths are listed for each exposure because the six detectors did not all observe the field at the same instant.
 
 To add a survey period, download six FITS cutouts at the same sky center, one per detector, and record each local filename and original archive URL in `public/data/barnards-star/observations.json`. Choose exposures with comparable wavelengths across survey periods. Rerun the preparation script for each field. The wide field uses `--field-arcmin 3.1 --output public/data/barnards-star/cube-wide.json`.
+
+Barnard’s Star opens in **Surrounding stars**, a roughly 8-arcminute field. To rebuild it, download the 18 source URLs with `?center=269.444,4.768&size=0.14` and save them under their filenames from `observations.json` without the `.gz` suffix. Run `python scripts/prepare-barnards-star.py --field-arcmin 7.97 --archive-cutouts DIRECTORY --cutout-degrees 0.14 --output public/data/barnards-star/cube-surroundings.json.gz`. **Boost faint stars** applies the same display stretch to all frames in a blink sequence. **Play** below the image cycles through all three survey epochs by default.
 
 The **DR1 · 102-channel mosaic** uses the [IRSA all-sky cube](https://doi.org/10.26131/IRSA679) around Barnard’s Star. Select an individual wavelength or average the available channels by detector. Click a pixel to generate its spectrum and export CSV with the FITS flag values. Pixels and channels with no usable measurements stay blank. The mosaic combines survey data across dates, so temporal comparisons use the separate multi-epoch product. Rebuild the mosaic browser asset with `python scripts/prepare-spectral-tile.py TILE.fits IRSA_FITS_URL 269.444 4.768 public/data/barnards-star/dr1-spectrum.json`.
 

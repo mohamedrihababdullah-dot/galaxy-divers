@@ -4,9 +4,11 @@ Run from the repository root with Astropy and SciPy installed.
 """
 
 import argparse
+import gzip
 import json
 import re
 from pathlib import Path
+from urllib.parse import urlencode
 
 import numpy as np
 from astropy import log, units as u
@@ -21,7 +23,7 @@ SIZE = 81
 PIXEL_SCALE = 2 / 3600
 
 
-def prepare(size, output):
+def prepare(size, output, archive_cutouts, cutout_degrees):
     log.setLevel("WARNING")
     metadata = json.loads((DATA / "observations.json").read_text(encoding="utf-8"))
     coords = metadata["coords"]
@@ -40,7 +42,8 @@ def prepare(size, output):
         planes = []
         flag_planes = []
         for entry in survey["observations"]:
-            with fits.open(DATA / entry["file"], memmap=False) as hdus:
+            path = archive_cutouts / entry["file"].removesuffix(".gz") if archive_cutouts else DATA / entry["file"]
+            with fits.open(path, memmap=False) as hdus:
                 image = hdus["IMAGE"]
                 detector = int(image.header["DETECTOR"])
                 if detector != len(planes) + 1:
@@ -75,10 +78,14 @@ def prepare(size, output):
                 if np.isfinite(aligned).mean() < 0.5:
                     raise ValueError(f"{entry['file']}: less than half of the Studio field is usable")
                 planes.append([float(value) if np.isfinite(value) else None for value in aligned.flat])
+                cutout = f"/data/barnards-star/{entry['file']}"
+                if archive_cutouts:
+                    query = urlencode({"center": f"{coords['ra']},{coords['dec']}", "size": cutout_degrees})
+                    cutout = f"{entry['source']}?{query}"
                 observations.append({
                     "date": Time(image.header["DATE-OBS"], scale="utc").isot + "Z",
                     "source": entry["source"],
-                    "cutout": f"/data/barnards-star/{entry['file']}",
+                    "cutout": cutout,
                     "wavelength": float(wavelength.to_value(u.um)),
                     "bandwidth": float(bandwidth.to_value(u.um)),
                 })
@@ -97,15 +104,23 @@ def prepare(size, output):
         "pixelScaleArcsec": PIXEL_SCALE * 3600, "flagNames": flag_names,
         "note": "Barnard’s Star is saturated in these exposures. Bright-source artifacts affect pixel values and the difference image.",
     }
-    output.write_text(json.dumps(cube, separators=(",", ":"), allow_nan=False), encoding="utf-8")
+    payload = json.dumps(cube, separators=(",", ":"), allow_nan=False)
+    if output.suffix == ".gz":
+        output.write_bytes(gzip.compress(payload.encode("utf-8"), mtime=0))
+    else:
+        output.write_text(payload, encoding="utf-8")
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--field-arcmin", type=float, default=SIZE * PIXEL_SCALE * 60)
     parser.add_argument("--output", type=Path, default=DATA / "cube.json")
+    parser.add_argument("--archive-cutouts", type=Path, help="Directory of uncompressed IRSA cutouts")
+    parser.add_argument("--cutout-degrees", type=float, help="Requested IRSA cutout width in degrees")
     args = parser.parse_args()
     size = 2 * round((args.field_arcmin / (PIXEL_SCALE * 60) - 1) / 2) + 1
     if not 3 <= size <= 255:
         parser.error("field width must give between 3 and 255 output pixels")
-    prepare(size, args.output)
+    if args.archive_cutouts and not args.cutout_degrees:
+        parser.error("--archive-cutouts requires --cutout-degrees")
+    prepare(size, args.output, args.archive_cutouts, args.cutout_degrees)

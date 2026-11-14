@@ -20,8 +20,8 @@ function download(content: string, format: 'json' | 'csv', name = 'spherex-candi
   window.setTimeout(() => URL.revokeObjectURL(url), 1000)
 }
 
-export function ObservationStudio({ url, target, coords, zoom, onZoom }: {
-  url: string; target: string; coords: Coordinates; zoom: number; onZoom: (zoom: number) => void
+export function ObservationStudio({ url, target, coords, zoom, onZoom, field }: {
+  url: string; target: string; coords: Coordinates; zoom: number; onZoom: (zoom: number) => void; field?: string
 }) {
   const [cube, setCube] = useState<Cube>()
   const [error, setError] = useState(false)
@@ -29,6 +29,9 @@ export function ObservationStudio({ url, target, coords, zoom, onZoom }: {
     const controller = new AbortController()
     fetch(url, { signal: controller.signal }).then(response => {
       if (!response.ok) throw new Error('Cube unavailable')
+      if (url.endsWith('.gz') && response.body) {
+        return new Response(response.body.pipeThrough(new DecompressionStream('gzip'))).json()
+      }
       return response.json()
     }).then(data => validateCube(data?.cube ?? data)).then(setCube).catch(() => {
       if (!controller.signal.aborted) setError(true)
@@ -36,11 +39,11 @@ export function ObservationStudio({ url, target, coords, zoom, onZoom }: {
     return () => controller.abort()
   }, [url])
   if (!cube) return <p className="details" role="status">{error ? 'The observation cube could not be loaded.' : 'Loading observation cube…'}</p>
-  return <Studio cube={cube} target={target} coords={coords} zoom={zoom} onZoom={onZoom} />
+  return <Studio cube={cube} target={target} coords={coords} zoom={zoom} onZoom={onZoom} field={field} />
 }
 
-export function Studio({ cube, target, coords, zoom, onZoom, simulated = false, local = false }: {
-  cube: Cube; target: string; coords: Coordinates; zoom: number; onZoom: (zoom: number) => void; simulated?: boolean; local?: boolean
+export function Studio({ cube, target, coords, zoom, onZoom, field, simulated = false, local = false }: {
+  cube: Cube; target: string; coords: Coordinates; zoom: number; onZoom: (zoom: number) => void; field?: string; simulated?: boolean; local?: boolean
 }) {
   const { width, height, bands, epochs, unit } = cube
   const query = new URLSearchParams(location.search)
@@ -57,7 +60,12 @@ export function Studio({ cube, target, coords, zoom, onZoom, simulated = false, 
   })
   const [wipe, setWipe] = useState(integerParam('wipe', 101, 50))
   const [alternateBand, setAlternateBand] = useState(integerParam('bandB', bands.length, -1))
-  const [blink, setBlink] = useState(false)
+  const [blink, setBlink] = useState(0)
+  const [playing, setPlaying] = useState(false)
+  const [blinkAll, setBlinkAll] = useState(query.get('playback') !== 'pair' && epochs.length > 2 && alternateBand < 0)
+  const [faintStars, setFaintStars] = useState(query.get('stretch') !== 'original' && !simulated && !!cube.pixelScaleArcsec)
+  const playAll = blinkAll && alternateBand < 0
+  const frameCount = playAll ? epochs.length : 2
   const [point, setPoint] = useState<Point | null>(() => {
     const x = integerParam('x', width, -1)
     const y = integerParam('y', height, -1)
@@ -76,6 +84,9 @@ export function Studio({ cube, target, coords, zoom, onZoom, simulated = false, 
     const indices = selectedKey.split(',').map(Number)
     const a = stack(epochs[first].planes, indices, width * height)
     const b = stack(epochs[second].planes, alternateBand < 0 ? indices : [alternateBand], width * height)
+    const frames = mode === 'blink' && playAll
+      ? epochs.map(epoch => stack(epoch.planes, indices, width * height))
+      : [a, b]
     const signA = mode === 'sum' ? 1 : -1
     const combined = Float32Array.from(a, (value, pixel) => {
       if (alternateBand >= 0) return b[pixel] + signA * value
@@ -90,25 +101,39 @@ export function Studio({ cube, target, coords, zoom, onZoom, simulated = false, 
       }
       return count ? sum / count : NaN
     })
+    const displayFrames = mode === 'sum' ? [combined] : frames
     let low = Infinity
     let high = -Infinity
-    let differenceScale = 0
-    for (let i = 0; i < a.length; i++) {
-      for (const value of mode === 'sum' ? [combined[i]] : [a[i], b[i]]) {
+    const samples: number[] = []
+    for (const frame of displayFrames) {
+      for (const value of frame) {
         if (!Number.isFinite(value)) continue
         low = Math.min(low, value)
         high = Math.max(high, value)
+        if (faintStars) samples.push(value)
       }
+    }
+    if (samples.length) {
+      samples.sort((a, b) => a - b)
+      const lower = samples[Math.floor((samples.length - 1) * .45)]
+      const upper = samples[Math.floor((samples.length - 1) * .997)]
+      if (upper > lower) {
+        low = lower
+        high = upper
+      }
+    }
+    let differenceScale = 0
+    for (let i = 0; i < a.length; i++) {
       if (Number.isFinite(combined[i])) differenceScale = Math.max(differenceScale, Math.abs(combined[i]))
     }
-    return { a, b, combined, low, range: high - low || 1, differenceScale: differenceScale || 1 }
-  }, [epochs, first, second, selectedKey, alternateBand, width, height, mode])
+    return { a, b, frames, combined, low, range: high - low || 1, differenceScale: differenceScale || 1 }
+  }, [epochs, first, second, selectedKey, alternateBand, width, height, mode, playAll, faintStars])
 
   useEffect(() => {
-    if (!canCompare || mode !== 'blink') return
-    const timer = window.setInterval(() => setBlink(value => !value), 750)
+    if (!canCompare || mode !== 'blink' || !playing) return
+    const timer = window.setInterval(() => setBlink(value => (value + 1) % frameCount), 750)
     return () => window.clearInterval(timer)
-  }, [mode, canCompare])
+  }, [mode, canCompare, playing, frameCount])
 
   useEffect(() => {
     const ctx = canvas.current?.getContext('2d')
@@ -120,13 +145,13 @@ export function Studio({ cube, target, coords, zoom, onZoom, simulated = false, 
         const sourceY = Math.floor(height / 2 + (y - height / 2) / zoom)
         const source = sourceY * width + sourceX
         const offset = (y * width + x) * 4
-        const showSecond = mode === 'blink' ? blink : x >= width * wipe / 100
-        const value = !canCompare ? pixels.a[source] : mode === 'difference' || mode === 'sum'
-          ? pixels.combined[source] : (showSecond ? pixels.b : pixels.a)[source]
+        const value = mode === 'blink' ? pixels.frames[blink % frameCount][source]
+          : mode === 'difference' || mode === 'sum' ? pixels.combined[source]
+          : (x >= width * wipe / 100 ? pixels.b : pixels.a)[source]
         if (Number.isFinite(value)) {
           const difference = canCompare && mode === 'difference'
-          const level = difference ? Math.abs(value) / pixels.differenceScale : (value - pixels.low) / pixels.range
-          const brightness = Math.round(255 * (difference ? level : Math.sqrt(level)))
+          const level = difference ? Math.abs(value) / pixels.differenceScale : Math.max(0, Math.min(1, (value - pixels.low) / pixels.range))
+          const brightness = Math.round(255 * (difference ? level : faintStars ? Math.asinh(12 * level) / Math.asinh(12) : Math.sqrt(level)))
           image.data[offset] = difference && value < 0 ? brightness * .2 : brightness
           image.data[offset + 1] = difference ? brightness * .63 : brightness
           image.data[offset + 2] = difference && value > 0 ? brightness * .22 : brightness
@@ -143,9 +168,10 @@ export function Studio({ cube, target, coords, zoom, onZoom, simulated = false, 
       ctx.strokeStyle = tagged ? '#ffb859' : '#a0e8de'
       ctx.strokeRect(x - 3, y - 3, 6, 6)
     }
-  }, [blink, height, mode, pixels, point, tagged, width, wipe, zoom, canCompare])
+  }, [blink, height, mode, pixels, point, tagged, width, wipe, zoom, canCompare, frameCount, faintStars])
 
-  const activeEpoch = spectrumEpoch === 'a' ? first : second
+  const blinkEpoch = playAll ? blink % frameCount : blink % frameCount === 0 ? first : second
+  const activeEpoch = mode === 'blink' ? blinkEpoch : spectrumEpoch === 'a' ? first : second
   const pixelIndex = point ? point.y * width + point.x : -1
   const spectrum = point ? bands.flatMap((band, index) => {
     const wavelength = epochs[activeEpoch].observations?.[index].wavelength ?? band.wavelength
@@ -165,10 +191,11 @@ export function Studio({ cube, target, coords, zoom, onZoom, simulated = false, 
   const observationsB = epochs[second].observations
   const observationA = observationsA?.[selected[0]]
   const observationB = observationsB?.[alternateBand < 0 ? selected[0] : alternateBand]
+  const displayedObservation = epochs[blinkEpoch].observations?.[!playAll && blink % frameCount === 1 && alternateBand >= 0
+    ? alternateBand : selected[0]]
 
   function viewUrl() {
     const url = new URL(location.href)
-    const field = url.searchParams.get('field')
     const embed = url.searchParams.get('embed')
     url.search = new URLSearchParams({
       ra: String(coords.ra), dec: String(coords.dec), zoom: String(zoom), a: String(first), b: String(second),
@@ -177,6 +204,8 @@ export function Studio({ cube, target, coords, zoom, onZoom, simulated = false, 
       ...(simulated ? { demo: target } : {}),
       ...(point ? { x: String(point.x), y: String(point.y) } : {}),
       ...(point && tagged ? { candidate: '1' } : {}),
+      ...(mode === 'blink' && !playAll ? { playback: 'pair' } : {}),
+      ...(!faintStars ? { stretch: 'original' } : {}),
       ...(!canCompare ? { product: 'spectrum' } : {}),
       ...(field ? { field } : {}),
       ...(embed === '1' ? { embed } : {}),
@@ -260,7 +289,8 @@ export function Studio({ cube, target, coords, zoom, onZoom, simulated = false, 
     </div>
     <div className="studio-modes" aria-label="Comparison mode">
       {canCompare && modes.map(([value, label]) =>
-        <button key={value} aria-pressed={mode === value} onClick={() => { setMode(value); setBlink(false) }}>{label}</button>)}
+        <button key={value} aria-pressed={mode === value} onClick={() => { setMode(value); setBlink(0); setPlaying(false) }}>{label}</button>)}
+      {!simulated && mode !== 'difference' && <button aria-pressed={faintStars} onClick={() => setFaintStars(value => !value)}>Boost faint stars</button>}
       {!local && <button onClick={copyView}>{copied ? 'Link copied' : 'Copy view link'}</button>}
     </div>
     {share && <label className="studio-link">View link<input value={currentViewUrl} readOnly onFocus={event => event.currentTarget.select()} /></label>}
@@ -283,13 +313,30 @@ export function Studio({ cube, target, coords, zoom, onZoom, simulated = false, 
           y: Math.max(0, Math.min(height - 1, (point?.y ?? Math.floor(height / 2)) + step[1])),
         })
       }} />
+    {canCompare && <div className="studio-playback">
+      <button className="primary" onClick={() => {
+        if (mode !== 'blink') {
+          setMode('blink')
+          setBlink(0)
+          setPlaying(true)
+        } else setPlaying(value => !value)
+      }}>{mode === 'blink' && playing ? 'Pause' : 'Play'}</button>
+      {mode === 'blink' && <>
+        <button onClick={() => { setPlaying(false); setBlink(value => (value + 1) % frameCount) }}>Next frame</button>
+        {epochs.length > 2 && alternateBand < 0 && <label className="playback-scope">
+          <input type="checkbox" checked={blinkAll} onChange={event => { setBlinkAll(event.target.checked); setBlink(0) }} /> All epochs
+        </label>}
+        <span>{blink % frameCount + 1} / {frameCount} · {displayedObservation?.date.slice(0, 10) ?? epochs[blinkEpoch].label ?? epochs[blinkEpoch].date}</span>
+        {displayedObservation && <a href={displayedObservation.cutout}>Frame FITS</a>}
+      </>}
+    </div>}
     {canCompare && mode === 'wipe' && <label className="studio-wipe">Split between Epoch A and B
       <input type="range" min="0" max="100" value={wipe} onChange={event => setWipe(Number(event.target.value))} />
     </label>}
     <p className="studio-help">{!canCompare ? 'DR1 survey mosaic. Dark navy marks missing samples.'
       : mode === 'sum' ? 'Epoch A + B using pixels with paired measurements. Stationary sources reinforce across epochs.'
       : mode === 'difference' ? 'Epoch B − A. Amber brightened, blue faded, and black shows near-zero change. Dark navy marks missing samples.'
-      : mode === 'blink' ? `Showing epoch ${blink ? 'B' : 'A'}` : 'Epoch A on the left, Epoch B on the right.'} Click the image to sample a pixel.</p>
+      : mode === 'blink' ? 'Compare the same field across dates.' : 'Epoch A on the left, Epoch B on the right.'} Click the image to sample a pixel.</p>
     {alternateBand >= 0 && <p className="studio-help">Different wavelengths can leave residuals around stationary stars. Match bands to investigate motion.</p>}
     {cube.note && <p className="studio-help">{cube.note}</p>}
     {!canCompare && epochs[0].source && <p><a href={epochs[0].source}>Original IRSA FITS cube</a></p>}
@@ -298,14 +345,14 @@ export function Studio({ cube, target, coords, zoom, onZoom, simulated = false, 
       {[observationA, observationB].map((item, index) => <p key={index}>
         Epoch {index === 0 ? 'A' : 'B'} · {item.date} · {item.wavelength.toFixed(4)} µm
         {' · '}<a href={item.source}>Original FITS</a>
-        {' · '}<a href={item.cutout} download>Compressed FITS cutout</a>
+        {' · '}<a href={item.cutout} download>FITS cutout</a>
       </p>)}
       <p>Each epoch groups six exposures from the same survey period. Passband and point-spread function differences can leave residuals in the difference image.</p>
     </details>}
     {point && <div className="studio-report">
       <h3>Pixel spectrum · ({point.x}, {point.y})</h3>
       <p>{spectrum.length} of {bands.length} channels have a measured sample at this pixel.</p>
-      {canCompare && <label className="spectrum-epoch">Spectrum epoch<select value={spectrumEpoch} onChange={event => setSpectrumEpoch(event.target.value)}>
+      {canCompare && mode !== 'blink' && <label className="spectrum-epoch">Spectrum epoch<select value={spectrumEpoch} onChange={event => setSpectrumEpoch(event.target.value)}>
         <option value="a">Epoch A · {epochs[first].date}</option>
         <option value="b">Epoch B · {epochs[second].date}</option>
       </select></label>}
