@@ -5,6 +5,7 @@ type Point = { x: number; y: number }
 type Mode = 'wipe' | 'blink' | 'difference' | 'sum'
 const modes = [['wipe', 'Split view'], ['blink', 'Blink'], ['difference', 'Difference'], ['sum', 'Add epochs']] as const
 const tag = 'Unidentified Moving Object'
+const displayScale = 3
 
 function integerParam(name: string, limit: number, fallback: number) {
   const value = new URLSearchParams(location.search).get(name)
@@ -115,8 +116,9 @@ export function Studio({ cube, target, coords, zoom, onZoom, field, simulated = 
     }
     if (samples.length) {
       samples.sort((a, b) => a - b)
-      const lower = samples[Math.floor((samples.length - 1) * .45)]
-      const upper = samples[Math.floor((samples.length - 1) * .997)]
+      // Keep the brightest few pixels from setting the exposure for the entire field.
+      const lower = samples[Math.floor((samples.length - 1) * .55)]
+      const upper = samples[Math.floor((samples.length - 1) * .98)]
       if (upper > lower) {
         low = lower
         high = upper
@@ -135,23 +137,23 @@ export function Studio({ cube, target, coords, zoom, onZoom, field, simulated = 
     return () => window.clearInterval(timer)
   }, [mode, canCompare, playing, frameCount])
 
-  useEffect(() => {
-    const ctx = canvas.current?.getContext('2d')
-    if (!ctx) return
-    const image = ctx.createImageData(width, height)
-    for (let y = 0; y < height; y++) {
-      for (let x = 0; x < width; x++) {
-        const sourceX = Math.floor(width / 2 + (x - width / 2) / zoom)
-        const sourceY = Math.floor(height / 2 + (y - height / 2) / zoom)
-        const source = sourceY * width + sourceX
-        const offset = (y * width + x) * 4
-        const value = mode === 'blink' ? pixels.frames[blink % frameCount][source]
-          : mode === 'difference' || mode === 'sum' ? pixels.combined[source]
-          : (x >= width * wipe / 100 ? pixels.b : pixels.a)[source]
+  const displayFrames = useMemo(() => {
+    const difference = mode === 'difference'
+    const planes = difference || mode === 'sum' ? [pixels.combined] : pixels.frames
+    const stretch = Math.asinh(16)
+    return planes.map(plane => {
+      const frame = document.createElement('canvas')
+      frame.width = width
+      frame.height = height
+      const ctx = frame.getContext('2d')
+      if (!ctx) return frame
+      const image = ctx.createImageData(width, height)
+      for (let pixel = 0; pixel < plane.length; pixel++) {
+        const value = plane[pixel]
+        const offset = pixel * 4
         if (Number.isFinite(value)) {
-          const difference = canCompare && mode === 'difference'
           const level = difference ? Math.abs(value) / pixels.differenceScale : Math.max(0, Math.min(1, (value - pixels.low) / pixels.range))
-          const brightness = Math.round(255 * (difference ? level : faintStars ? Math.asinh(12 * level) / Math.asinh(12) : Math.sqrt(level)))
+          const brightness = Math.round(255 * (difference ? level : faintStars ? Math.asinh(16 * level) / stretch : Math.sqrt(level)))
           image.data[offset] = difference && value < 0 ? brightness * .2 : brightness
           image.data[offset + 1] = difference ? brightness * .63 : brightness
           image.data[offset + 2] = difference && value > 0 ? brightness * .22 : brightness
@@ -160,15 +162,40 @@ export function Studio({ cube, target, coords, zoom, onZoom, field, simulated = 
         }
         image.data[offset + 3] = 255
       }
+      ctx.putImageData(image, 0, 0)
+      return frame
+    })
+  }, [faintStars, height, mode, pixels, width])
+
+  useEffect(() => {
+    const ctx = canvas.current?.getContext('2d')
+    if (!ctx) return
+    ctx.setTransform(displayScale, 0, 0, displayScale, 0, 0)
+    ctx.imageSmoothingEnabled = true
+    ctx.imageSmoothingQuality = 'medium'
+    const visibleWidth = width / zoom
+    const visibleHeight = height / zoom
+    const draw = (frame: HTMLCanvasElement) => ctx.drawImage(
+      frame, (width - visibleWidth) / 2, (height - visibleHeight) / 2, visibleWidth, visibleHeight,
+      0, 0, width, height,
+    )
+    draw(displayFrames[mode === 'blink' ? blink % frameCount : 0])
+    if (canCompare && mode === 'wipe') {
+      const boundary = width * wipe / 100
+      ctx.save()
+      ctx.beginPath()
+      ctx.rect(boundary, 0, width - boundary, height)
+      ctx.clip()
+      draw(displayFrames[1])
+      ctx.restore()
     }
-    ctx.putImageData(image, 0, 0)
     if (point) {
       const x = width / 2 + (point.x + .5 - width / 2) * zoom
       const y = height / 2 + (point.y + .5 - height / 2) * zoom
       ctx.strokeStyle = tagged ? '#ffb859' : '#a0e8de'
       ctx.strokeRect(x - 3, y - 3, 6, 6)
     }
-  }, [blink, height, mode, pixels, point, tagged, width, wipe, zoom, canCompare, frameCount, faintStars])
+  }, [blink, height, mode, displayFrames, point, tagged, width, wipe, zoom, canCompare, frameCount])
 
   const blinkEpoch = playAll ? blink % frameCount : blink % frameCount === 0 ? first : second
   const activeEpoch = mode === 'blink' ? blinkEpoch : spectrumEpoch === 'a' ? first : second
@@ -294,7 +321,7 @@ export function Studio({ cube, target, coords, zoom, onZoom, field, simulated = 
       {!local && <button onClick={copyView}>{copied ? 'Link copied' : 'Copy view link'}</button>}
     </div>
     {share && <label className="studio-link">View link<input value={currentViewUrl} readOnly onFocus={event => event.currentTarget.select()} /></label>}
-    <canvas ref={canvas} className="studio-sky" width={width} height={height} tabIndex={0}
+    <canvas ref={canvas} className="studio-sky" width={width * displayScale} height={height * displayScale} tabIndex={0}
       aria-label="Sky comparison. Click to sample a pixel, or use arrow keys to move the selection."
       onClick={event => {
         const rect = event.currentTarget.getBoundingClientRect()
