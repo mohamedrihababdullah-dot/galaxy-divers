@@ -9,7 +9,7 @@ function loadFrame(directory: string, frame: Frame): Promise<LoadedFrame> {
   return imageElement.decode().then(() => ({ ...frame, imageElement }))
 }
 
-export function SpherexImageSequence({ directory, target, predictedMarker = false }: { directory: string; target: string; predictedMarker?: boolean }) {
+export function SpherexImageSequence({ directory, target, hideMarker = false }: { directory: string; target: string; hideMarker?: boolean }) {
   const [manifest, setManifest] = useState<Frame[]>([])
   const [frames, setFrames] = useState<LoadedFrame[]>([])
   const [error, setError] = useState('')
@@ -22,6 +22,7 @@ export function SpherexImageSequence({ directory, target, predictedMarker = fals
   const [zoom, setZoom] = useState(1)
   const canvas = useRef<HTMLCanvasElement>(null)
   const current = frames[frame]
+  const markerPosition = hideMarker ? undefined : current?.star
   const baseline = frames[reference]
   const size = current?.imageElement.naturalWidth ?? 840
 
@@ -103,16 +104,16 @@ export function SpherexImageSequence({ directory, target, predictedMarker = fals
         if (frame === reference) setFrame((frame + 1) % frames.length)
         setDifference(true)
       }}>Difference</button>
-      {current?.star && <label><input type="checkbox" checked={marker} onChange={event => setMarker(event.target.checked)} /> Mark {target}</label>}
+      {markerPosition && <label><input type="checkbox" checked={marker} onChange={event => setMarker(event.target.checked)} /> Mark {target}</label>}
     </div>
     <div className="wise-sequence-frame spherex-sequence-frame">
       {!current && <p role="status">{error || 'Loading SPHEREx images…'}</p>}
       {current && <canvas ref={canvas} width={size} height={size} role="img"
         aria-label={difference ? 'Difference between two aligned SPHEREx images' : `SPHEREx image of the field around ${target}`} />}
-      {current?.star && marker && <span className={predictedMarker ? 'spherex-star-marker spherex-star-arrow' : 'spherex-star-marker'} style={{
-        left: (50 + ((current.star[0] + .5) / size - .5) * zoom) + '%',
-        top: (50 + ((current.star[1] + .5) / size - .5) * zoom) + '%',
-      }}><span>{predictedMarker && <b aria-hidden="true">⟵ </b>}{target}{predictedMarker && " · predicted"}</span></span>}
+      {markerPosition && marker && <span className="spherex-star-marker" style={{
+        left: (50 + ((markerPosition[0] + .5) / size - .5) * zoom) + '%',
+        top: (50 + ((markerPosition[1] + .5) / size - .5) * zoom) + '%',
+      }}><span>{target}</span></span>}
     </div>
     <div className="studio-playback">
       <button type="button" className="primary" disabled={!current || difference} onClick={() => setPlaying(value => !value)}>
@@ -130,9 +131,7 @@ export function SpherexImageSequence({ directory, target, predictedMarker = fals
     </div>
     {difference
       ? <p>Cyan shows brighter pixels in the comparison image and red shows brighter pixels in the reference. This view subtracts display brightness. Saturation, wavelength and exposure differences can also leave residuals.</p>
-      : <p>Press Play to blink through the observation dates. {!predictedMarker && (current?.star ? "Use a narrower field to compare the marked star against its neighbors. The ring follows the position predicted from Gaia DR3." : "These exposures cover the WISE 0855 field. The brown dwarf may be too faint to identify in individual images.")}</p>}
-    {predictedMarker && <p>The arrow points to the predicted position of WISE 0855, a brown dwarf.
-      Its detection in these exposures is unconfirmed. <a href="https://doi.org/10.3847/0004-6256/152/3/78">Published astrometry</a></p>}
+      : <p>Press Play to blink through the observation dates. {markerPosition && "Use a narrower field to compare the marked star against its neighbors. The ring follows the position predicted from Gaia DR3."}</p>}
     {current && <p>NASA / JPL-Caltech / SPHEREx, via NASA/IPAC IRSA · <a href={current.source}>Original FITS observation</a>{current.original && <> · <a href={directory + current.original}>Full detector image</a></>}</p>}
   </div>
 }

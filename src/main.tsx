@@ -275,7 +275,7 @@ function App() {
           {showWiseImages ? <WiseImageSequence key={viewKey} />
             : showSpherexImages ? <SpherexImageSequence key={viewKey + ':' + showProvidedImages}
               directory={showProvidedImages ? showSpherexImages + 'provided/' : showSpherexImages}
-              target={sequence.target} predictedMarker={isWise0855} />
+              target={sequence.target} hideMarker={isWise0855} />
             : upload ? <Studio key={viewKey} cube={upload.cube} target={upload.target} coords={upload.coords} zoom={zoom} onZoom={changeZoom} local />
             : demoData ? <Studio key={viewKey} cube={demoData} target={demoTarget} coords={demoPreset} zoom={zoom} onZoom={changeZoom} simulated />
             : sequence && cubeUrl ? <ObservationStudio key={`${viewKey}:${cubeUrl}`} url={cubeUrl} target={sequence.target} coords={sequence} zoom={zoom} onZoom={changeZoom} field={selectedField ? selectedField.id : 'standard'} />

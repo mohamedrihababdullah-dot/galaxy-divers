@@ -286,7 +286,3 @@ select { width: 100%; padding: 8px; border: 1px solid var(--border); border-radi
 .spherex-sequence-frame > p { padding: 1rem; }
 .spherex-star-marker { position: absolute; width: 30px; height: 30px; transform: translate(-50%, -50%); border: 2px solid var(--accent); border-radius: 50%; pointer-events: none; }
 .spherex-star-marker span { position: absolute; left: calc(100% + 6px); top: -4px; padding: 2px 4px; border-radius: 4px; background: #060a12; color: var(--accent); font-size: 12px; white-space: nowrap; }
-
-.spherex-star-arrow { width: 0; height: 0; border: 0; }
-.spherex-star-arrow span { left: -5px; top: 0; transform: translateY(-50%); padding: 2px 6px 2px 0; }
-.spherex-star-arrow b { font-size: 23px; line-height: 1; vertical-align: middle; }
