@@ -1,5 +1,6 @@
 export type Coordinates = { ra: number; dec: number }
-export type Band = { wavelength: number; detector: number }
+export type Band = { wavelength: number | null; detector: number | null }
+type FitsMetadata = { detector: string | null; wavelength: number | null; bandwidth: number | null }
 export type Plane = ArrayLike<number | null>
 export type BandObservation = {
   date: string
@@ -16,7 +17,7 @@ export type Cube = {
   flagNames?: Record<string, string>
   note?: string
   bands: Band[]
-  epochs: { date: string; source?: string; label?: string; observations?: BandObservation[]; planes: Plane[]; flags?: Plane[] }[]
+  epochs: { date: string; source?: string; label?: string; observations?: BandObservation[]; fitsMetadata?: FitsMetadata; planes: Plane[]; flags?: Plane[] }[]
 }
 
 export function parseCoordinates(ra: string, dec: string): Coordinates | null {
@@ -82,14 +83,18 @@ export function demoCube(target: string): Cube {
 
 export function validateCube(cube: Cube): Cube {
   const { width, height, unit, bands, epochs } = cube
+  const positive = (value: number | null) => value === null || Number.isFinite(value) && value > 0
   if (!Number.isInteger(width) || !Number.isInteger(height) || width < 1 || height < 1 ||
     (cube.pixelScaleArcsec !== undefined && (!Number.isFinite(cube.pixelScaleArcsec) || cube.pixelScaleArcsec <= 0)) ||
     typeof unit !== 'string' || !Array.isArray(bands) || !bands.length ||
-    bands.some(band => !Number.isFinite(band.wavelength) || band.wavelength <= 0 ||
-      !Number.isInteger(band.detector) || band.detector < 1 || band.detector > 6) ||
+    bands.some(band => !positive(band.wavelength) ||
+      (band.detector !== null && (!Number.isInteger(band.detector) || band.detector < 1 || band.detector > 6))) ||
     !Array.isArray(epochs) || !epochs.length || epochs.some(epoch =>
       !Number.isFinite(Date.parse(epoch.date)) || !Array.isArray(epoch.planes) ||
       (epoch.label !== undefined && typeof epoch.label !== 'string') ||
+      (epoch.fitsMetadata !== undefined && (!epoch.fitsMetadata ||
+        (epoch.fitsMetadata.detector !== null && typeof epoch.fitsMetadata.detector !== 'string') ||
+        !positive(epoch.fitsMetadata.wavelength) || !positive(epoch.fitsMetadata.bandwidth))) ||
       (epoch.observations !== undefined && (!Array.isArray(epoch.observations) ||
         epoch.observations.length !== bands.length || epoch.observations.some(item =>
           !Number.isFinite(Date.parse(item.date)) || typeof item.source !== 'string' ||

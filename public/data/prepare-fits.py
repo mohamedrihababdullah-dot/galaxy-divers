@@ -18,7 +18,33 @@ def observation_date(image, primary):
     raise ValueError("Missing observation date (DATE-OBS or MJD-OBS).")
 
 
-def prepare_fits(inputs, wavelength, detector):
+def observation_metadata(image, hdus, wcs, center):
+    detector = None
+    wavelength = None
+    bandwidth = None
+    for header in (image.header, hdus[0].header):
+        for key in ("DETECTOR", "ARRAY"):
+            value = str(header.get(key, "")).strip()
+            if value and detector is None:
+                detector = value
+
+    if "WCS-WAVE" in hdus:
+        try:
+            spectral = WCS(image.header, hdus, key="W")
+            spectral.sip = None
+            wave, band = spectral.pixel_to_world(*wcs.world_to_pixel(center))
+            wavelength = float(wave.to_value(u.um))
+            bandwidth = float(band.to_value(u.um))
+        except (ValueError, TypeError, AttributeError, KeyError, IndexError):
+            pass
+
+    def positive(value):
+        return value if value is not None and np.isfinite(value) and value > 0 else None
+
+    return {"detector": detector, "wavelength": positive(wavelength), "bandwidth": positive(bandwidth)}
+
+
+def prepare_fits(inputs):
     epochs = []
     footprint = None
     unit = None
@@ -48,35 +74,45 @@ def prepare_fits(inputs, wavelength, detector):
                     flags = hdus["FLAGS"].data
                     if flags.shape != data.shape:
                         raise ValueError("The FLAGS extension does not match the science image.")
-                    data[flags != 0] = np.nan
+                    if "WCS-WAVE" in hdus:
+                        # Keep the same display flags as the built-in SPHEREx sequences.
+                        display_bits = (0, 1, 2, 12, 21, 26)
+                        mask = np.uint32(0xFFFFFFFF ^ sum(1 << bit for bit in display_bits))
+                        data[(flags.astype(np.uint32) & mask) != 0] = np.nan
+                    else:
+                        data[flags != 0] = np.nan
                 data[~np.isfinite(data)] = np.nan
 
                 if footprint is None:
                     ny, nx = data.shape
-                    width, height = min(nx, 256), min(ny, 256)
-                    left, top = (nx - width) // 2, (ny - height) // 2
-                    yy, xx = np.indices((height, width), dtype=float)
-                    sky = wcs.pixel_to_world(xx + left, yy + top)
-                    center = wcs.pixel_to_world(left + (width - 1) / 2, top + (height - 1) / 2).icrs
-                    aligned = data[top:top + height, left:left + width]
+                    stride = max(1, (max(nx, ny) + 511) // 512)
+                    xx, yy = np.meshgrid(np.arange(0, nx, stride), np.arange(ny - 1, -1, -stride))
+                    height, width = xx.shape
+                    sky = wcs.pixel_to_world(xx, yy)
+                    center = wcs.pixel_to_world((nx - 1) / 2, (ny - 1) / 2).icrs
+                    aligned = data[yy, xx]
                 else:
                     x, y = wcs.world_to_pixel(sky)
-                    aligned = map_coordinates(data, [y, x], order=1, mode="constant", cval=np.nan)
+                    valid = np.isfinite(data)
+                    nearest = map_coordinates(valid, [y, x], order=0, mode="constant", cval=0)
+                    weight = map_coordinates(valid.astype(np.float32), [y, x], order=1, mode="constant", cval=0)
+                    values = map_coordinates(np.where(valid, data, 0), [y, x], order=1, mode="constant", cval=0)
+                    aligned = np.divide(values, weight, out=np.full_like(values, np.nan), where=nearest & (weight > 0))
                 valid = np.isfinite(aligned)
                 footprint = valid if footprint is None else footprint & valid
-                epochs.append({"date": date, "source": name,
-                               "planes": [[float(value) if np.isfinite(value) else None for value in aligned.flat]]})
+                epochs.append({"date": date, "source": name, "label": f"{date[:10]} · {name}",
+                               "fitsMetadata": observation_metadata(image, hdus, wcs, center),
+                               "planes": [np.where(valid, aligned, None).ravel().tolist()]})
         except Exception as error:
             raise ValueError(f"{name}: {error}") from error
+        yield None
 
     if not footprint.any():
-        raise ValueError("The images have no usable overlap in the first image's central cutout.")
+        raise ValueError("The images have no usable overlap on the first image’s sky grid.")
     epochs.sort(key=lambda epoch: epoch["date"])
-    if len({epoch["date"] for epoch in epochs}) < 2:
-        raise ValueError("Choose observations from at least two distinct dates.")
-    return json.dumps({
+    yield json.dumps({
         "target": "Uploaded FITS observations",
         "coords": {"ra": center.ra.deg, "dec": center.dec.deg},
         "cube": {"width": width, "height": height, "unit": unit,
-                 "bands": [{"wavelength": wavelength, "detector": detector}], "epochs": epochs},
+                 "bands": [{"wavelength": None, "detector": None}], "epochs": epochs},
     }, allow_nan=False)

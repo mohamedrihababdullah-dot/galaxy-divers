@@ -5,8 +5,6 @@ export type UploadedObservation = { target: string; coords: Coordinates; cube: C
 
 export function ObservationUpload({ onLoad }: { onLoad: (data: UploadedObservation) => void }) {
   const [files, setFiles] = useState<File[]>([])
-  const [wavelength, setWavelength] = useState('')
-  const [detector, setDetector] = useState(1)
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState('')
   const worker = useRef<Worker | null>(null)
@@ -30,23 +28,19 @@ export function ObservationUpload({ onLoad }: { onLoad: (data: UploadedObservati
       throw new Error('Invalid target or sky coordinates in prepared JSON.')
     }
     onLoad({ ...data, cube: validateCube(data.cube) })
-    finish(`Loaded ${data.cube.epochs.length} observations. Choose Blink or Difference to compare them.`)
+    const count = data.cube.epochs.length
+    finish(count === 1 ? 'Observation ready to preview.' : `Loaded ${count} observations. Choose Blink or Difference to compare them.`)
   }
 
   async function prepare() {
     if (active.current) return
-    if (!isJson && (files.length < 2 || files.length > 8 ||
+    if (!isJson && (files.length < 1 || files.length > 8 ||
       files.some(file => !/\.(fits?|fts)(\.gz)?$/i.test(file.name)))) {
-      setMessage('Choose 2–8 FITS images, or one prepared observation JSON file.')
+      setMessage('Choose 1–8 FITS images, or one prepared observation JSON file.')
       return
     }
-    const microns = Number(wavelength)
-    if (!isJson && (!Number.isFinite(microns) || microns <= 0)) {
-      setMessage('Enter the shared central wavelength in microns.')
-      return
-    }
-    if (files.reduce((sum, file) => sum + file.size, 0) > 128 * 1024 * 1024) {
-      setMessage('The files exceed 128 MB in total. Download smaller FITS cutouts and try again.')
+    if (files.some(file => file.size > 128 * 1024 * 1024)) {
+      setMessage('Each file must be 128 MB or smaller. Try a FITS cutout for larger observations.')
       return
     }
     active.current = true
@@ -68,7 +62,7 @@ export function ObservationUpload({ onLoad }: { onLoad: (data: UploadedObservati
         }
       }
       task.onerror = () => finish('The FITS processor could not start. Check your internet connection and retry.')
-      task.postMessage({ files, wavelength: microns, detector })
+      task.postMessage({ files })
     } catch (error) {
       finish(error instanceof Error ? error.message : 'Could not read the selected files.')
     }
@@ -77,24 +71,13 @@ export function ObservationUpload({ onLoad }: { onLoad: (data: UploadedObservati
   return <details className="panel upload-panel">
     <summary>Upload observations</summary>
     <form onSubmit={event => { event.preventDefault(); void prepare() }}>
-      <p>Choose calibrated FITS cutouts of the same field and wavelength from different dates, or open a saved observation JSON. Files are processed in this browser.</p>
+      <p>Choose one calibrated FITS image to preview, or up to eight overlapping images to align, blink, and subtract. For the clearest motion comparison, use similar wavelengths from different dates. Files are processed in your browser.</p>
       <label>Observation files
         <input type="file" accept=".fits,.fit,.fts,.gz,.json" multiple disabled={busy}
           onChange={event => { setFiles(Array.from(event.target.files ?? [])); setMessage('') }} />
       </label>
-      {!isJson && <div className="studio-controls">
-        <label>Shared wavelength (µm)
-          <input type="number" min="0" step="any" value={wavelength} disabled={busy}
-            onChange={event => setWavelength(event.target.value)} />
-        </label>
-        <label>Detector
-          <select value={detector} disabled={busy} onChange={event => setDetector(Number(event.target.value))}>
-            {[1, 2, 3, 4, 5, 6].map(value => <option key={value} value={value}>{value}</option>)}
-          </select>
-        </label>
-      </div>}
       <div className="upload-actions">
-        <button className="primary" disabled={!files.length || busy}>Load into studio</button>
+        <button className="primary" disabled={!files.length || busy}>{files.length > 1 ? 'Compare in studio' : 'Preview in studio'}</button>
         {busy && !isJson && <button type="button" onClick={() => finish('Import canceled.')}>Cancel</button>}
       </div>
       {message && <p role="status">{message}</p>}
