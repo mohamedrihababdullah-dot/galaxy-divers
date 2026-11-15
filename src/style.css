@@ -252,6 +252,7 @@ select { width: 100%; padding: 8px; border: 1px solid var(--border); border-radi
 .upload-panel p { margin: 0; color: var(--muted); font-size: 14px; }
 .upload-panel label input { width: 100%; }
 .upload-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.upload-actions a { align-self: center; }
 .sky-map { margin-top: 18px; }
 .infrared-legend { margin-top: 18px; padding: 18px; }
 .infrared-legend h2 { margin: 0 0 8px; }

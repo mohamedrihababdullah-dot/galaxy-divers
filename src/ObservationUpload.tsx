@@ -78,6 +78,9 @@ export function ObservationUpload({ onLoad }: { onLoad: (data: UploadedObservati
       </label>
       <div className="upload-actions">
         <button className="primary" disabled={!files.length || busy}>{files.length > 1 ? 'Compare in studio' : 'Preview in studio'}</button>
+        <a href="https://irsa.ipac.caltech.edu/applications/spherex/search-spectral-images" target="_blank" rel="noopener noreferrer">
+          Click Here To Download Nasa's Official Fits Data
+        </a>
         {busy && !isJson && <button type="button" onClick={() => finish('Import canceled.')}>Cancel</button>}
       </div>
       {message && <p role="status">{message}</p>}
