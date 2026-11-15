@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { createRoot } from 'react-dom/client'
+import { AboutPlanetX } from './AboutPlanetX'
 import { AboutSpherex } from './AboutSpherex'
 import './style.css'
 import { ObservationStudio, Studio } from './Studio'
@@ -21,20 +22,23 @@ const telescopes = [{ id: 'gaia', label: 'Gaia' }, { id: 'wise', label: 'WISE' }
 const demo = { ra: 133.795129, dec: -7.245147 }
 const wise0855 = { ra: 133.760, dec: -7.242 }
 const query = new URLSearchParams(location.search)
-const isSpherexPage = location.pathname.replace(/\/$/, '') === '/spherex'
+const pagePath = location.pathname.replace(/\/$/, '')
+const isSpherexPage = pagePath === '/spherex'
+const isPlanetXPage = pagePath === '/planet-x'
 
 function SiteHeader() {
-  const home = isSpherexPage ? '/' : ''
+  const isAboutPage = isSpherexPage || isPlanetXPage
+  const home = isAboutPage ? '/' : ''
   return <header className="site-header">
     <a className="brand" href={`${home}#home`}>
       <span className="galaxy-mark" aria-hidden="true" />
       <span className="brand-copy"><strong>Galaxy Divers</strong><small>Dive into · Discover · Explore</small></span>
     </a>
     <nav className="site-nav" aria-label="Main navigation">
-      <a href={`${home}#home`} aria-current={isSpherexPage ? undefined : 'page'}><span aria-hidden="true">⌂</span> Home</a>
+      <a href={`${home}#home`} aria-current={isAboutPage ? undefined : 'page'}><span aria-hidden="true">⌂</span> Home</a>
       <a href={`${home}#explorer`}><span aria-hidden="true">♄</span> Explore</a>
       <a href="/spherex/" aria-current={isSpherexPage ? 'page' : undefined}><span aria-hidden="true">✧</span> SPHEREx</a>
-      <a href={`${home}#planet-x`}><span aria-hidden="true">ⓘ</span> Planet X</a>
+      <a href="/planet-x/" aria-current={isPlanetXPage ? 'page' : undefined}><span aria-hidden="true">ⓘ</span> Planet X</a>
       <a href={`${home}#about`}><span aria-hidden="true">ⓘ</span> About</a>
     </nav>
     <a className="header-link" href={`${home}#explorer`}><span aria-hidden="true">✦</span> Explore the Unknown</a>
@@ -166,7 +170,7 @@ function App() {
           <div className="dive-trail" />
           <img className="diver" src="/hero/diver-pointing.png" alt="" fetchPriority="high" />
         </div>
-        <a className="planet-label" href="#planet-x">Planet X <small>Hypothetical</small></a>
+        <a className="planet-label" href="/planet-x/">Planet X <small>Hypothetical</small></a>
         <div className="hero-content">
           <p className="hero-kicker">Planet X &amp; SPHEREx</p>
           <h1 id="hero-title">Dive into the<br />unseen sky.</h1>
@@ -320,4 +324,9 @@ function App() {
 }
 
 if (isSpherexPage) document.title = 'About SPHEREx | Galaxy Divers'
-createRoot(document.getElementById('root')!).render(isSpherexPage ? <><SiteHeader /><AboutSpherex /></> : <App />)
+if (isPlanetXPage) document.title = 'About Planet X | Galaxy Divers'
+createRoot(document.getElementById('root')!).render(
+  isPlanetXPage ? <><SiteHeader /><AboutPlanetX /></>
+    : isSpherexPage ? <><SiteHeader /><AboutSpherex /></>
+    : <App />,
+)
