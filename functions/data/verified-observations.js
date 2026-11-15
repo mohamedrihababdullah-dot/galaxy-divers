@@ -1,4 +1,4 @@
-[
+export default [
   {
     "ra": 269.444,
     "dec": 4.768,

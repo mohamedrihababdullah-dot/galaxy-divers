@@ -1,5 +1,5 @@
 import { IRSA, MAX_ROWS, readPosition, parseCsv, normalizeProducts, selectVisits, fetchArchive } from '../lib/sky-archive.js'
-import verifiedFields from '../data/verified-observations.json' with { type: 'json' }
+import verifiedFields from '../data/verified-observations.js'
 
 export async function onRequestGet(context) {
   const params = new URL(context.request.url).searchParams
