@@ -10,7 +10,8 @@ export function Help() {
       <div>
         <h2 id="help-target">Pick a place to look</h2>
         <p>Open <strong>Quick-select target</strong> and choose <strong>Barnard’s Star</strong>. Under <strong>View</strong>, choose <strong>SPHEREx · 18 wide-field images</strong>. Turn on <strong>Mark Barnard’s Star</strong> to see a ring at its expected position.</p>
-        <p>If you already know the sky coordinates, enter the right ascension and declination in degrees and select <strong>Find with Aladin</strong>. The teal circle on the map marks the position you entered.</p>
+        <p>To explore any other place, enter its right ascension and declination in degrees and select <strong>Load SPHEREx observations</strong>. We look for real NASA archive images at that position and line up up to three visits from different dates. The teal circle on the map marks your coordinates, and the outline shows the area in the images.</p>
+        <p>When the dated images appear, choose <strong>Compare all visits</strong> and press <strong>Play</strong>. Click a dated image to inspect it alone. If fewer visits are available, we show the ones we can verify. If the archive is temporarily unavailable, select <strong>Retry</strong> later. Each image includes a link to its original FITS data.</p>
       </div>
       <figure>
         <div className="help-star-image">
