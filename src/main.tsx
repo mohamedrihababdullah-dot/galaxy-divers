@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import { AboutPlanetX } from './AboutPlanetX'
 import { AboutSpherex } from './AboutSpherex'
+import { Help } from './Help'
 import './style.css'
 import { ObservationStudio, Studio } from './Studio'
 import { SkyMap } from './SkyMap'
@@ -25,21 +26,33 @@ const query = new URLSearchParams(location.search)
 const pagePath = location.pathname.replace(/\/$/, '')
 const isSpherexPage = pagePath === '/spherex'
 const isPlanetXPage = pagePath === '/planet-x'
+const isHelpPage = pagePath === '/help'
 
 function SiteHeader() {
-  const isAboutPage = isSpherexPage || isPlanetXPage
-  const home = isAboutPage ? '/' : ''
+  const isStandalonePage = isSpherexPage || isPlanetXPage || isHelpPage
+  const home = isStandalonePage ? '/' : ''
   return <header className="site-header">
     <a className="brand" href={`${home}#home`}>
       <span className="galaxy-mark" aria-hidden="true" />
       <span className="brand-copy"><strong>Galaxy Divers</strong><small>Dive into · Discover · Explore</small></span>
     </a>
     <nav className="site-nav" aria-label="Main navigation">
-      <a href={`${home}#home`} aria-current={isAboutPage ? undefined : 'page'}><span aria-hidden="true">⌂</span> Home</a>
+      <a href={`${home}#home`} aria-current={isStandalonePage ? undefined : 'page'}><span aria-hidden="true">⌂</span> Home</a>
       <a href={`${home}#explorer`}><span aria-hidden="true">♄</span> Explore</a>
       <a href="/spherex/" aria-current={isSpherexPage ? 'page' : undefined}><span aria-hidden="true">✧</span> SPHEREx</a>
-      <a href="/planet-x/" aria-current={isPlanetXPage ? 'page' : undefined}><span aria-hidden="true">ⓘ</span> Planet X</a>
-      <a href={`${home}#about`}><span aria-hidden="true">ⓘ</span> About</a>
+      <a href="/planet-x/" aria-current={isPlanetXPage ? 'page' : undefined}>
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+          <circle cx="12" cy="12" r="6" />
+          <ellipse cx="12" cy="12" rx="11" ry="3" transform="rotate(-30 12 12)" />
+        </svg> Planet X
+      </a>
+      <a href="/help/" aria-current={isHelpPage ? 'page' : undefined}>
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+          <circle cx="12" cy="12" r="10" />
+          <path d="M9 9a3 3 0 1 1 4.6 2.5c-1 .6-1.6 1.3-1.6 2.5" />
+          <circle cx="12" cy="17.3" r=".75" fill="currentColor" stroke="none" />
+        </svg> Help
+      </a>
     </nav>
     <a className="header-link" href={`${home}#explorer`}><span aria-hidden="true">✦</span> Explore the Unknown</a>
   </header>
@@ -317,7 +330,7 @@ function App() {
       </section>
       <section className="mission-notes" aria-label="About the project">
         <div id="planet-x"><h2>Planet X</h2><p>Planet X is a hypothetical planet beyond Neptune. The red planet in the hero is an illustration.</p></div>
-        <div id="about"><h2>About Galaxy Divers</h2><p>We’re building an infrared sky explorer for the NASA International Space Apps Challenge.</p></div>
+        <div id="about"><h2>Help</h2><p><a href="/help/">Learn how to compare observations in the studio</a>.</p></div>
       </section>
     </main>
   </div>
@@ -325,8 +338,10 @@ function App() {
 
 if (isSpherexPage) document.title = 'About SPHEREx | Galaxy Divers'
 if (isPlanetXPage) document.title = 'About Planet X | Galaxy Divers'
+if (isHelpPage) document.title = 'Help | Galaxy Divers'
 createRoot(document.getElementById('root')!).render(
-  isPlanetXPage ? <><SiteHeader /><AboutPlanetX /></>
+  isHelpPage ? <><SiteHeader /><Help /></>
+    : isPlanetXPage ? <><SiteHeader /><AboutPlanetX /></>
     : isSpherexPage ? <><SiteHeader /><AboutSpherex /></>
     : <App />,
 )

@@ -6,6 +6,7 @@ export default defineConfig({
     rollupOptions: {
       input: {
         home: fileURLToPath(new URL('./index.html', import.meta.url)),
+        help: fileURLToPath(new URL('./help/index.html', import.meta.url)),
         planetX: fileURLToPath(new URL('./planet-x/index.html', import.meta.url)),
         spherex: fileURLToPath(new URL('./spherex/index.html', import.meta.url)),
       },

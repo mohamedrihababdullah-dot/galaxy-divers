@@ -40,6 +40,7 @@ html { scroll-behavior: smooth; }
 .site-nav a, .header-link { display: inline-flex; align-items: center; gap: 6px; border: 1px solid transparent; border-radius: 999px; color: #edf3fa; text-decoration: none; white-space: nowrap; }
 .site-nav a { padding: 5px 9px; font-size: 14px; }
 .site-nav a span { font-size: 20px; line-height: 1; color: #bce2ff; }
+.site-nav a svg { width: 20px; height: 20px; flex: none; color: #bce2ff; }
 .site-nav a[aria-current="page"] { border-color: #287abd; background: #072647; box-shadow: 0 0 11px #149aff80, inset 0 0 10px #149aff54; }
 .site-nav a:hover, .header-link:hover { border-color: #6bbaf4; }
 .header-link { padding: 6px 11px; border-color: #174c72; font-size: 11px; }
@@ -147,6 +148,14 @@ html { scroll-behavior: smooth; }
 .spherex-about figure { margin: 0; }
 .spherex-about img { width: 100%; height: auto; display: block; border-radius: 12px; border: 1px solid var(--border); }
 .spherex-about figcaption { margin-top: 10px; font-size: 13px; color: var(--muted); }
+.help-link { display: inline-block; padding: 9px 14px; border-radius: 8px; text-decoration: none; }
+.help-star-image { position: relative; }
+.help-star-label { position: absolute; left: 51%; top: 52%; padding: 4px 8px; border-radius: 6px; color: var(--accent); background: #090f19ed; font-size: 13px; }
+.help-image-pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.help-image-pair span { display: block; text-align: center; margin-top: 6px; font-size: 14px; }
+.help-difference-key { display: flex; flex-wrap: wrap; gap: 8px 20px; list-style: none; padding: 0; }
+.help-difference-key li { display: flex; align-items: center; gap: 8px; }
+.help-difference-key span { display: inline-block; flex: none; width: 12px; height: 12px; border-radius: 3px; }
 #explorer-title { font-size: clamp(32px, 5vw, 52px); letter-spacing: -.045em; }
 .sky-guide { width: min(1160px, calc(100% - 44px)); margin: 36px auto 66px; scroll-margin-top: 24px; }
 .guide-intro { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); align-items: center; gap: 24px; }
