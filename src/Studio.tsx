@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { stack, validateCube, type Coordinates, type Cube } from './studio-data'
+import { PixelChart, PixelChartHeading } from './PixelChart'
 
 type Point = { x: number; y: number }
 type Mode = 'wipe' | 'blink' | 'difference' | 'sum'
@@ -393,9 +394,14 @@ export function Studio({ cube, target, coords, zoom, onZoom, field, simulated = 
       <p>Each epoch groups six exposures from the same survey period. Passband and point-spread function differences can leave residuals in the difference image.</p>
     </details>}
     {point && <div className="studio-report">
-      {importedFits ? <><h3>Pixel sample · ({point.x}, {point.y})</h3>
-      <PixelChart samples={lightCurve} axis="Observation date" unit={unit} /></> : <>
-      <h3>Pixel spectrum · ({point.x}, {point.y})</h3>
+      <p>Selected pixel ({point.x}, {point.y})</p>
+      {(canCompare || importedFits) && <>
+        <PixelChartHeading kind="lightCurve" />
+        {!importedFits && <p>Band {curveBand + 1} · {bands[curveBand].wavelength?.toFixed(3)} µm across observation dates</p>}
+        <PixelChart samples={lightCurve} axis="Observation date" unit={unit} />
+      </>}
+      {!importedFits && <>
+      <PixelChartHeading kind="spectrum" />
       <p>{spectrum.length} of {bands.length} channels have a measured sample at this pixel.</p>
       {canCompare && mode !== 'blink' && <label className="spectrum-epoch">Spectrum epoch<select value={spectrumEpoch} onChange={event => setSpectrumEpoch(event.target.value)}>
         <option value="a">Epoch A · {epochs[first].date}</option>
@@ -410,9 +416,6 @@ export function Studio({ cube, target, coords, zoom, onZoom, field, simulated = 
       {canCompare && epochs[second].flags && <PixelFlags cube={cube} epoch={second}
         indices={alternateBand < 0 ? selected : [alternateBand]} pixel={pixelIndex} />}
       {canCompare && <>
-      {!importedFits && <><h3>Pixel light curve</h3>
-      <p>Band {curveBand + 1} · {bands[curveBand].wavelength?.toFixed(3)} µm across observation dates</p>
-      <PixelChart samples={lightCurve} axis="Observation date" unit={unit} /></>}
       <div className="studio-modes">
         <button aria-pressed={tagged} onClick={() => { setTagged(!tagged); setShare(false) }}>{tagged ? 'Remove candidate tag' : `Tag as ${tag}`}</button>
         {tagged && <>
@@ -436,33 +439,4 @@ function PixelFlags({ cube, epoch, indices, pixel }: { cube: Cube; epoch: number
   return <p>Quality flags · {cube.epochs[epoch].label ?? cube.epochs[epoch].date} · {flags.length
     ? flags.map(bit => cube.flagNames?.[bit] ?? `Bit ${bit}`).join(', ')
     : 'No bits set'} · 0x{mask.toString(16).padStart(8, '0')}</p>
-}
-
-function PixelChart({ samples, axis, unit }: {
-  samples: { x: number; label: string; value: number }[]
-  axis: string
-  unit: string
-}) {
-  const [index, setIndex] = useState(0)
-  if (!samples.length) return <p>No valid samples at this pixel.</p>
-  const activeIndex = Math.min(index, samples.length - 1)
-  const active = samples[activeIndex]
-  const values = samples.map(item => item.value)
-  const low = Math.min(...values)
-  const high = Math.max(...values)
-  const start = samples[0].x
-  const end = samples[samples.length - 1].x
-  const points = samples.map(({ x, value }) => [
-    12 + (end === start ? .5 : (x - start) / (end - start)) * 376,
-    86 - (high === low ? .5 : (value - low) / (high - low)) * 74,
-  ])
-  return <figure className="spectrum">
-    <svg viewBox="0 0 400 100" role="img" aria-label={`Brightness by ${axis.toLowerCase()}, ${samples.length} samples`}>
-      <polyline points={points.map(point => point.join(',')).join(' ')} fill="none" stroke="currentColor" strokeWidth="2" />
-      <circle cx={points[activeIndex][0]} cy={points[activeIndex][1]} r="4" fill="currentColor" />
-    </svg>
-    {samples.length > 1 && <input type="range" aria-label={`${axis} sample`} min="0" max={samples.length - 1}
-      value={activeIndex} onChange={event => setIndex(Number(event.target.value))} />}
-    <figcaption>{active.label} · {active.value.toPrecision(4)} {unit} · {samples.length} samples</figcaption>
-  </figure>
 }

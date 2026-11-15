@@ -7,6 +7,7 @@ import './style.css'
 import { ObservationStudio, Studio } from './Studio'
 import { SkyMap } from './SkyMap'
 import { InfraredBandLegend } from './InfraredBandLegend'
+import { TargetPixelGraphs } from './TargetPixelGraphs'
 import { SkyGuide } from './SkyGuide'
 import { GaiaComparison } from './TelescopeComparison'
 import { SpherexImageSequence } from './SpherexImageSequence'
@@ -16,7 +17,7 @@ import { demoCube, parseCoordinates } from './studio-data'
 
 type Frame = { image: string; observedAt: string; wavelength: string; source: string }
 type Field = { id: string; label: string; cube: string }
-type Sequence = { target: string; ra: number; dec: number; frames: Frame[]; imageDirectory?: string; cube?: string; spectrum?: string; fields?: Field[] }
+type Sequence = { target: string; ra: number; dec: number; frames: Frame[]; imageDirectory?: string; cube?: string; spectrum?: string; graphs?: string; fields?: Field[] }
 
 const targets = ['Barnard’s Star', 'Epsilon Indi B', 'WISE 0855', 'RW Aurigae', 'R Draconis']
 const telescopes = [{ id: 'gaia', label: 'Gaia' }, { id: 'wise', label: 'WISE' }] as const
@@ -325,6 +326,7 @@ function App() {
           </>}
         </section>
       </div>
+      {!upload && sequence?.graphs && <TargetPixelGraphs key={sequence.graphs} url={sequence.graphs} target={sequence.target} />}
       <InfraredBandLegend />
       <SkyMap coords={(demoTarget ? demoPreset : position) ?? demoPreset} searchVersion={viewKey} onSearch={coords => select(coords)} />
       </section>

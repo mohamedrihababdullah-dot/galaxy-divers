@@ -242,6 +242,20 @@ select { width: 100%; padding: 8px; border: 1px solid var(--border); border-radi
 .spectrum svg { display: block; width: min(100%, 520px); border: 1px solid var(--border); background: #080f19; color: var(--accent); }
 .spectrum input { display: block; width: min(100%, 520px); margin: 8px 0; accent-color: var(--accent); }
 .spectrum-epoch { max-width: 240px; margin-top: 10px; }
+.target-pixel-graphs { margin-top: 18px; padding: 18px; }
+.target-pixel-graphs h2 { margin-top: 0; }
+.target-pixel-graphs p, .pixel-reference figcaption { color: var(--muted); font-size: 14px; }
+.target-pixel-layout { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 265px), 1fr)); gap: 20px; }
+.pixel-reference { margin: 0; max-width: 365px; }
+.pixel-reference > div { position: relative; }
+.pixel-reference canvas { display: block; width: 100%; height: auto; cursor: crosshair; }
+.pixel-reference span { position: absolute; width: 13px; height: 13px; border: 2px solid var(--accent); transform: translate(-50%, -50%); pointer-events: none; }
+.pixel-reference figcaption { margin-top: 7px; }
+.target-pixel-plots { display: grid; gap: 16px; }
+.target-pixel-plots label { max-width: 260px; }
+.pixel-chart-heading { display: flex; align-items: center; gap: 6px; margin-block: 4px 8px; }
+.pixel-chart-heading h3 { margin: 0; }
+.pixel-chart-heading button { width: 32px; min-height: 32px; padding: 0; border-radius: 50%; color: var(--accent); }
 .studio-link { margin-bottom: 12px; }
 .upload-panel { margin-bottom: 18px; padding: 14px 18px; }
 .upload-panel summary { cursor: pointer; font-weight: 700; color: var(--accent); }
