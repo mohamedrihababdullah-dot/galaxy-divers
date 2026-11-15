@@ -6,7 +6,6 @@ import './style.css'
 import { ObservationStudio, Studio } from './Studio'
 import { SkyMap } from './SkyMap'
 import { SkyGuide } from './SkyGuide'
-import { ArchiveSearch } from './ArchiveSearch'
 import { GaiaComparison } from './TelescopeComparison'
 import { SpherexImageSequence } from './SpherexImageSequence'
 import { WiseImageSequence } from './WiseImageSequence'
@@ -313,7 +312,6 @@ function App() {
         </section>
       </div>
       <SkyMap coords={(demoTarget ? demoPreset : position) ?? demoPreset} searchVersion={viewKey} onSearch={coords => select(coords)} />
-      <ArchiveSearch coords={(demoTarget ? demoPreset : position) ?? demoPreset} />
       </section>
       <section className="mission-notes" aria-label="About the project">
         <div id="planet-x"><h2>Planet X</h2><p>Planet X is a hypothetical planet beyond Neptune. The red planet in the hero is an illustration.</p></div>
