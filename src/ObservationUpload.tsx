@@ -68,8 +68,8 @@ export function ObservationUpload({ onLoad }: { onLoad: (data: UploadedObservati
     }
   }
 
-  return <details className="panel upload-panel">
-    <summary>Upload observations</summary>
+  return <section className="panel upload-panel" aria-labelledby="upload-observations-title">
+    <h3 id="upload-observations-title">Upload observations</h3>
     <form onSubmit={event => { event.preventDefault(); void prepare() }}>
       <p>Choose one calibrated FITS image to preview, or up to eight overlapping images to align, blink, and subtract. For the clearest motion comparison, use similar wavelengths from different dates. Files are processed in your browser.</p>
       <label>Observation files
@@ -82,7 +82,7 @@ export function ObservationUpload({ onLoad }: { onLoad: (data: UploadedObservati
       </div>
       {message && <p role="status">{message}</p>}
     </form>
-  </details>
+  </section>
 }
 
 export function saveObservation(data: UploadedObservation) {
