@@ -8,8 +8,10 @@ type Atlas = {
   getFov: () => [number, number]
   addCatalog: (catalog: Catalog) => void
   removeOverlay: (catalog: Catalog) => void
+  addOverlay: (overlay: GraphicOverlay) => void
 }
 type Catalog = { hide: () => void }
+type GraphicOverlay = Catalog & { add: (shape: unknown) => void }
 type TargetCatalog = Catalog & { addSources: (sources: unknown[]) => void }
 
 const catalogs = {
@@ -28,6 +30,8 @@ type AladinApi = {
   }) => Atlas
   catalog: (options: { name: string; color: string; sourceSize: number; shape: string }) => TargetCatalog
   source: (ra: number, dec: number) => unknown
+  graphicOverlay: (options: { color: string; lineWidth: number; name: string }) => GraphicOverlay
+  polyline: (points: [number, number][]) => unknown
   catalogFromVizieR: (id: string, target: Coordinates, radius: number,
     options: { name: string; color: string; sourceSize: number; limit: number; onClick: string },
     callback: (sources: unknown[]) => void, onError: () => void) => Catalog
@@ -51,15 +55,17 @@ function loadAladin() {
   return loading
 }
 
-export function SkyMap({ coords, searchVersion, onSearch }: {
+export function SkyMap({ coords, searchVersion, onSearch, footprint }: {
   coords: Coordinates
   searchVersion: number
   onSearch: (coords: Coordinates) => void
+  footprint?: [number, number][] | null
 }) {
   const container = useRef<HTMLDivElement>(null)
   const atlas = useRef<Atlas | null>(null)
   const api = useRef<AladinApi | null>(null)
   const targetMarker = useRef<TargetCatalog | null>(null)
+  const fieldOutline = useRef<GraphicOverlay | null>(null)
   const layers = useRef<Partial<Record<CatalogKey, Catalog>>>({})
   const [messages, setMessages] = useState<Partial<Record<CatalogKey, string>>>({})
   const [attempt, setAttempt] = useState(0)
@@ -102,6 +108,18 @@ export function SkyMap({ coords, searchVersion, onSearch }: {
     targetMarker.current = marker
   }, [status, ra, dec, searchVersion])
 
+  useEffect(() => {
+    if (status !== 'ready' || !atlas.current || !api.current) return
+    if (fieldOutline.current) atlas.current.removeOverlay(fieldOutline.current)
+    fieldOutline.current = null
+    if (!footprint) return
+    const outline = api.current.graphicOverlay({ color: '#a0e8de', lineWidth: 2, name: 'SPHEREx displayed field' })
+    outline.add(api.current.polyline(footprint))
+    atlas.current.addOverlay(outline)
+    atlas.current.setFoV(0.25)
+    fieldOutline.current = outline
+  }, [status, footprint])
+
   function toggleCatalog(key: CatalogKey) {
     const view = atlas.current
     if (!view || !api.current) return
@@ -138,6 +156,7 @@ export function SkyMap({ coords, searchVersion, onSearch }: {
       <h2 id="sky-map-title">Aladin Lite sky map</h2>
     </div>
     <p>The teal circle marks the selected sky position. RA {ra}°, Dec {dec}° (ICRS).</p>
+    {footprint && <p>The teal outline marks the SPHEREx field shown above, aligned using the FITS sky coordinates.</p>}
     <p>DSS optical imagery with optional Gaia DR3 and AllWISE source markers. Load overlays after choosing a map field. Catalog positions are shown at their published coordinates.</p>
       <div ref={container} className="aladin-map" hidden={status === 'error'} aria-label="Interactive sky map" />
       {status === 'loading' && <p role="status">Loading sky map…</p>}

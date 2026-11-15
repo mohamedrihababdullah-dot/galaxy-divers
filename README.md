@@ -6,6 +6,18 @@ On Cloudflare Pages, use the repository root, the `main` production branch, `npm
 
 ## Explorer links and archive search
 
+### Live coordinate comparison
+
+Enter any valid RA/Dec and select **Load SPHEREx observations**, or open `/?ra=180&dec=30&live=1#explorer`. This searches official IRSA metadata for images containing that position; it is independent of the five prepared examples. The Cloudflare Pages functions query TAP with SIA as a fallback, then proxy small FITS cutouts. No account, API key, or new hosting service is required. Vite development mode also serves these API routes.
+
+The search selects up to three visits at least 30 days apart and checks up to three exposures per visit for comparable local wavelengths. A browser worker runs Astropy/SciPy to verify each FITS date, detector, and sky coverage and register images onto a common 6.1-arcminute ICRS field. The viewer offers dated thumbnails, blinking, difference images, original FITS links, and an Aladin footprint with Gaia/AllWISE overlays. Coordinates, wavelengths, and dates come from the archive and FITS headers. Missing pixels remain blank; retained bright-source flags are reported. Different passbands can affect apparent brightness changes.
+
+Searches are cached for 15 minutes and cutouts for one day at Cloudflare's edge. Downloads are limited to 32 MiB per cutout. There is no full-sky download. Fewer than three usable visits, empty coverage, archive outages, and individual failed exposures are reported explicitly. Survey cadence does not guarantee three released, usable images at every coordinate. The first load also downloads the Python runtime and astronomy libraries.
+
+Run `node --test scripts/test-sky-archive.mjs` for query validation, selection, and fallback tests. `node scripts/test-live-fits.mjs PATH/TO/pyodide.mjs CUTOUT_DIRECTORY` checks real FITS processing using a local Pyodide 0.29.1 distribution with Astropy/SciPy. The cutout directory contains the three detector-2 filenames from the Barnard manifest without `.gz`, downloaded from their source URLs with `?center=269.444,4.768&size=0.15`.
+
+Official API documentation: [SPHEREx data access](https://irsa.ipac.caltech.edu/spherex-archive-documentation/spherex-data-access/) and [IRSA cutout tutorial](https://caltech-ipac.github.io/irsa-tutorials/spherex-cutouts/).
+
 Open `/?ra=269.444&dec=4.768&mode=blink#explorer` to jump to Barnard’s Star. Add `field=wide` to load the wider time-series cutout, `product=spectrum` to open the DR1 mosaic, or `embed=1` for an iframe-friendly Studio view. Any valid coordinates center the Aladin map and the IRSA query. Prepared observations load at registered coordinates.
 
 **Search the latest SPHEREx releases** queries IRSA SIA2 on demand through the Cloudflare Pages function in `functions/api/spherex.js`. Choose a collection and field width to find calibrated FITS products and obtain spectral-image cutouts. The direct IRSA link also works with the static Vite build. Larger cutouts can take longer to download. When IRSA publishes another collection, update the list in the search UI and the function allowlist.

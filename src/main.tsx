@@ -10,6 +10,7 @@ import { SkyGuide } from './SkyGuide'
 import { GaiaComparison } from './TelescopeComparison'
 import { SpherexImageSequence } from './SpherexImageSequence'
 import { WiseImageSequence } from './WiseImageSequence'
+import { LiveSkySearch, type Footprint } from './LiveSkySearch'
 import { ObservationUpload, saveObservation, type UploadedObservation } from './ObservationUpload'
 import { demoCube, parseCoordinates } from './studio-data'
 
@@ -73,6 +74,8 @@ function App() {
   const [demoTarget, setDemoTarget] = useState(() => presets.find(item => item.target === query.get('demo'))?.target ?? '')
   const [zoom, setZoom] = useState(() => /^[1-5]$/.test(query.get('zoom') ?? '') ? Number(query.get('zoom')) : 1)
   const [viewKey, setViewKey] = useState(0)
+  const [liveSearch, setLiveSearch] = useState(query.get('live') === '1')
+  const [liveFootprint, setLiveFootprint] = useState<Footprint | null>(null)
   const [wiseOverlay, setWiseOverlay] = useState(false)
   const [showGaia, setShowGaia] = useState(false)
   const [product, setProduct] = useState(query.get('product') ?? (query.has('x') || query.has('y') ? 'epochs' : 'spherex-images'))
@@ -95,9 +98,10 @@ function App() {
   const selectedField = sequence && sequence.fields?.find(item => item.id === (field || defaultField))
   const spectrum = sequence && (product === 'spectrum' || !sequence.cube) && sequence.spectrum
   const cubeUrl = sequence && (spectrum || selectedField?.cube || sequence.cube)
-  const isBarnard = !upload && sequence?.target === 'Barnard’s Star'
+  const isLive = !upload && !demoTarget && position && (liveSearch || loadState !== 'loading' && !sequence)
+  const isBarnard = !isLive && !upload && sequence?.target === 'Barnard’s Star'
   const showWiseImages = isBarnard && product === 'images'
-  const imageDirectory = !upload && !demoTarget && sequence && sequence.imageDirectory
+  const imageDirectory = !isLive && !upload && !demoTarget && sequence && sequence.imageDirectory
   const isWise0855 = sequence?.target === 'WISE 0855'
   const hasOverlays = Boolean(imageDirectory && !isBarnard)
   const showProvidedImages = isWise0855 && product === 'provided-images'
@@ -126,8 +130,10 @@ function App() {
     return () => window.clearInterval(timer)
   }, [playing, count])
 
-  function select(coords: typeof demo, target = '', mode?: 'blink' | 'difference') {
+  function select(coords: typeof demo, target = '', mode?: 'blink' | 'difference', live = false) {
     setUpload(null)
+    setLiveSearch(live)
+    setLiveFootprint(null)
     setDemoTarget(target)
     setViewKey(value => value + 1)
     setShowGaia(false)
@@ -143,6 +149,7 @@ function App() {
       ra: String(coords.ra), dec: String(coords.dec), zoom: String(zoom), ...(target ? { demo: target } : {}),
     }).toString()
     if (mode) url.searchParams.set('mode', mode)
+    if (live) url.searchParams.set('live', '1')
     if (embed) url.searchParams.set('embed', '1')
     url.hash = 'explorer'
     setRa(String(coords.ra))
@@ -217,15 +224,13 @@ function App() {
               setError('Enter decimal degrees or coordinates like 08h55m and −7d14m.')
               return
             }
-            select(coords)
-            const map = document.getElementById('aladin-sky-map')
-            map?.focus({ preventScroll: true })
-            map?.scrollIntoView({ block: 'start' })
+            select(coords, '', undefined, true)
+            document.getElementById('observation-viewer')?.scrollIntoView({ block: 'start' })
           }}>
             <label>Right ascension (°)<input value={ra} onChange={(e) => setRa(e.target.value)} /></label>
             <label>Declination (°)<input value={dec} onChange={(e) => setDec(e.target.value)} /></label>
             {error && <p className="error" role="alert">{error}</p>}
-            <button className="primary" type="submit" aria-controls="aladin-sky-map">Find with Aladin</button>
+            <button className="primary" type="submit" aria-controls="observation-viewer">Load SPHEREx observations</button>
           </form>
           <h2 className="targets">Challenge targets</h2>
           <label className="target-select">Quick-select target
@@ -263,16 +268,15 @@ function App() {
         </div>
         <section id="observation-viewer" className="panel viewer" aria-label="Observation viewer">
           <div className="viewer-head">
-            <h2>{upload?.target || demoTarget || (sequence ? sequence.target : 'Observation search')}</h2>
+            <h2>{isLive ? 'SPHEREx sky observations' : upload?.target || demoTarget || (sequence ? sequence.target : 'Observation search')}</h2>
             {upload && <button onClick={() => saveObservation(upload)}>Save observation JSON</button>}
             {demoTarget && <span className="badge">Simulated data</span>}
-            {!upload && !demoTarget && sequence && <span className="badge">{showWiseImages ? 'NASA WISE' : 'NASA/IPAC IRSA'}</span>}
-            {!upload && !demoTarget && !sequence && <button onClick={() => select(presets[0], presets[0].target)}>Open demo</button>}
+            {(isLive || !upload && !demoTarget && sequence) && <span className="badge">{showWiseImages ? 'NASA WISE' : 'NASA/IPAC IRSA'}</span>}
           </div>
           <div id="telescope-comparisons" className="telescope-comparisons" hidden={!isBarnard || !showGaia}>
             {isBarnard && showGaia && <GaiaComparison />}
           </div>
-          {!upload && !demoTarget && sequence && (sequence.spectrum || sequence.fields?.length) && <div className="dataset-controls">
+          {!isLive && !upload && !demoTarget && sequence && (sequence.spectrum || sequence.fields?.length) && <div className="dataset-controls">
             {sequence.spectrum && <label>View
               <select value={showWiseImages ? 'images' : showSpherexImages ? 'spherex-images' : spectrum ? 'spectrum' : 'epochs'} onChange={event => changeDataset('product', event.target.value)}>
                 {isBarnard && <option value="images">WISE · Wide-field images</option>}
@@ -295,7 +299,8 @@ function App() {
               <option value="provided-images">SPHEREx · Two Detector 6 images</option>
             </select></label>
           </div>}
-          {showWiseImages ? <WiseImageSequence key={viewKey} />
+          {isLive ? <LiveSkySearch key={viewKey} coords={position!} onFootprint={setLiveFootprint} />
+            : showWiseImages ? <WiseImageSequence key={viewKey} />
             : showSpherexImages ? <SpherexImageSequence key={viewKey + ':' + showProvidedImages}
               directory={showProvidedImages ? showSpherexImages + 'provided/' : showSpherexImages}
               target={sequence.target} hideMarker={isWise0855} overlayDirectory={hasOverlays ? showSpherexImages : undefined}
@@ -324,7 +329,8 @@ function App() {
           </>}
         </section>
       </div>
-      <SkyMap coords={(demoTarget ? demoPreset : position) ?? demoPreset} searchVersion={viewKey} onSearch={coords => select(coords)} />
+      <SkyMap coords={(demoTarget ? demoPreset : position) ?? demoPreset} searchVersion={viewKey}
+        footprint={liveFootprint} onSearch={coords => select(coords, '', undefined, true)} />
       </section>
       <section className="mission-notes" aria-label="About the project">
         <div id="planet-x"><h2>Planet X</h2><p>Planet X is a hypothetical planet beyond Neptune. The red planet in the hero is an illustration.</p></div>
