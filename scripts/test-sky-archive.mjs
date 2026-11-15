@@ -59,3 +59,47 @@ test('API returns real inventory and falls back to SIA when TAP fails', async ()
     assert.ok(calls.some(url => url.includes('/SIA?')))
   } finally { globalThis.fetch = previous }
 })
+
+test('archive outage recovers three verified visits at the exact screenshot coordinates', async () => {
+  const original = globalThis.fetch
+  globalThis.fetch = async () => new Response('Unavailable', { status: 502 })
+  try {
+    const response = await onRequestGet({ request: new Request('https://example.test/api/sky-observations?ra=269.444&dec=4.768&detector=2') })
+    const data = await response.json()
+    assert.equal(response.status, 200)
+    assert.equal(data.recovery, true)
+    assert.equal(data.visits.length, 3)
+    assert.deepEqual(data.visits.map(visit => visit.date.slice(0, 10)), ['2025-08-25', '2026-03-15', '2026-08-18'])
+    assert.ok(data.notice.includes('previously indexed'))
+    assert.ok(data.visits.every(visit => visit.candidates.every(item => item.detector === 2)))
+    for (const position of ['269.445&dec=4.768', '180&dec=30']) {
+      const unknown = await onRequestGet({ request: new Request(`https://example.test/api/sky-observations?ra=${position}`) })
+      assert.equal(unknown.status, 502, 'Do not replace arbitrary coordinates with a saved target')
+    }
+  } finally { globalThis.fetch = original }
+})
+
+test('an earlier successful arbitrary-coordinate search remains usable during an outage', async () => {
+  const originalFetch = globalThis.fetch
+  const originalCaches = globalThis.caches
+  const saved = new Map()
+  const tasks = []
+  globalThis.caches = { default: {
+    match: async key => saved.get(key.url)?.clone(),
+    put: async (key, value) => { saved.set(key.url, value) },
+  } }
+  const request = new Request('https://example.test/api/sky-observations?ra=180&dec=30')
+  try {
+    globalThis.fetch = async () => new Response(`uri,time_bounds_lower,energy_bandpassname\n${source},61000,SPHEREx-D2\n`)
+    assert.equal((await onRequestGet({ request, waitUntil: task => tasks.push(task) })).status, 200)
+    await Promise.all(tasks)
+    for (const key of saved.keys()) if (!key.endsWith('&recovery=1')) saved.delete(key)
+    globalThis.fetch = async () => new Response('Unavailable', { status: 502 })
+    const response = await onRequestGet({ request })
+    const data = await response.json()
+    assert.equal(response.status, 200)
+    assert.equal(data.recovery, true)
+    assert.deepEqual(data.coords, { ra: 180, dec: 30 })
+    assert.equal(data.count, 1)
+  } finally { globalThis.fetch = originalFetch; globalThis.caches = originalCaches }
+})

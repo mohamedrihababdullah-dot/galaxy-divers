@@ -5,7 +5,7 @@ import { validateCube, type Coordinates, type Cube } from './studio-data'
 export type Footprint = [number, number][]
 type Product = { id: string; date: string; mjd: number; detector: number; source: string }
 type Visit = { date: string; candidates: Product[] }
-type Inventory = { count: number; detector: number; visits: Visit[]; truncated: boolean }
+type Inventory = { count: number; detector: number; visits: Visit[]; truncated: boolean; notice?: string }
 type SkyResult = {
   cube: Cube
   coords: Coordinates
@@ -78,12 +78,12 @@ export function LiveSkySearch({ coords, onFootprint }: { coords: Coordinates; on
         worker = new Worker('/data/sky-worker.mjs', { type: 'module' })
         worker.onerror = () => {
           if (!active) return
-          setError('The FITS processor could not start. Please retry.'); setBusy(false); worker?.terminate()
+          setStatus('Image preparation stopped.'); setError('The FITS processor could not start. Please retry.'); setBusy(false); worker?.terminate()
         }
         worker.onmessage = ({ data }) => {
           if (!active) return
           if (data.progress) setStatus(data.progress)
-          else if (data.error) { setError(data.error); setBusy(false); worker?.terminate() }
+          else if (data.error) { setStatus('Image preparation stopped.'); setError(data.error); setBusy(false); worker?.terminate() }
           else if (data.result) {
             try {
               const ready = { ...data.result, cube: validateCube(data.result.cube) } as SkyResult
@@ -96,7 +96,7 @@ export function LiveSkySearch({ coords, onFootprint }: { coords: Coordinates; on
         worker.postMessage({ visits: data.visits, coords })
       } catch (error) {
         if (!active) return
-        setError(error instanceof Error ? error.message : 'The archive search failed.'); setBusy(false)
+        setStatus('Search could not complete.'); setError(error instanceof Error ? error.message : 'The archive search failed.'); setBusy(false)
       }
     }
     void search()
@@ -121,6 +121,7 @@ export function LiveSkySearch({ coords, onFootprint }: { coords: Coordinates; on
     <p role="status" aria-live="polite">{status}</p>
     {busy && <progress aria-label="Loading sky observations" />}
     {error && <p className="error" role="alert">{error}</p>}
+    {inventory?.notice && <p role="note">{inventory.notice}</p>}
     {inventory?.truncated && <p>The archive reached its result limit. The dates below cover the returned observations.</p>}
     {result && <>
       {result.images.length < 3 && <p>{result.images.length} usable separated {result.images.length === 1 ? 'visit was' : 'visits were'} retrieved. Three visits could not be verified in this search.</p>}

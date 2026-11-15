@@ -1,4 +1,5 @@
 import { IRSA, MAX_ROWS, readPosition, parseCsv, normalizeProducts, selectVisits, fetchArchive } from '../lib/sky-archive.js'
+import verifiedFields from '../data/verified-observations.json' with { type: 'json' }
 
 export async function onRequestGet(context) {
   const params = new URL(context.request.url).searchParams
@@ -12,6 +13,7 @@ export async function onRequestGet(context) {
   const cacheKey = new Request(`${new URL(context.request.url).origin}/api/sky-observations?ra=${coords.ra}&dec=${coords.dec}&detector=${detector}`)
   const cached = await cache?.match(cacheKey)
   if (cached) return cached
+  const recoveryKey = new Request(`${cacheKey.url}&recovery=1`)
   try {
     const query = `SELECT TOP ${MAX_ROWS + 1} a.uri, p.time_bounds_lower, p.energy_bandpassname
       FROM spherex.artifact a JOIN spherex.plane p ON a.planeid = p.planeid
@@ -35,10 +37,29 @@ export async function onRequestGet(context) {
     const response = Response.json({ coords, detector, count: products.length,
       truncated: rows.length > MAX_ROWS, visits: selectVisits(products), searchedAt: new Date().toISOString() },
     { headers: { 'Cache-Control': 'public, max-age=900' } })
-    if (cache && products.length) context.waitUntil(cache.put(cacheKey, response.clone()))
+    if (cache && products.length) {
+      const recovery = new Response(await response.clone().text(), {
+        headers: { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=2592000' },
+      })
+      context.waitUntil(Promise.all([cache.put(cacheKey, response.clone()), cache.put(recoveryKey, recovery)]).catch(() => {}))
+    }
     return response
   } catch {
-    return Response.json({ error: 'NASA/IPAC IRSA could not complete this search. Please retry in a moment.' },
+    // Never substitute a nearby field: the recovery index must match the requested position.
+    const previous = await cache?.match(recoveryKey)
+    if (previous) {
+      const data = await previous.json()
+      return Response.json({ ...data, recovery: true,
+        notice: 'Live archive search is temporarily unavailable. Showing the last successful search for these exact coordinates.' },
+      { headers: { 'Cache-Control': 'no-store' } })
+    }
+    const field = verifiedFields.find(field => Math.abs(field.ra - coords.ra) < 1e-8 && Math.abs(field.dec - coords.dec) < 1e-8)
+    const products = field ? normalizeProducts(field.products, detector) : []
+    if (products.length) return Response.json({ coords, detector, count: products.length, truncated: false,
+      visits: selectVisits(products), recovery: true,
+      notice: 'Live archive search is temporarily unavailable. Showing previously indexed NASA observations for these exact coordinates.' },
+    { headers: { 'Cache-Control': 'no-store' } })
+    return Response.json({ error: 'IRSA’s search service is currently unavailable, and no saved observation list exists for these coordinates. Please try again when the archive service is back online.' },
       { status: 502, headers: { 'Cache-Control': 'no-store' } })
   }
 }
