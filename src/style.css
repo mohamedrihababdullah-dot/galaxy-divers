@@ -241,6 +241,18 @@ select { width: 100%; padding: 8px; border: 1px solid var(--border); border-radi
 .upload-panel label input { width: 100%; }
 .upload-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 .sky-map { margin-top: 18px; }
+.infrared-legend { margin-top: 18px; padding: 18px; }
+.infrared-legend h2 { margin: 0 0 8px; }
+.infrared-legend p { margin: 0; color: var(--muted); }
+.infrared-detectors { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 215px), 1fr)); gap: 16px; margin: 16px 0; }
+.infrared-detectors h3 { margin: 0 0 6px; font-size: 14px; }
+.infrared-swatches { display: grid; grid-template-columns: repeat(17, minmax(0, 1fr)); gap: 2px; }
+.infrared-swatches button { min-width: 0; min-height: 28px; border: 0; border-radius: 2px; padding: 0; }
+.infrared-swatches button:hover, .infrared-swatches button[aria-pressed="true"] { box-shadow: inset 0 0 0 2px #fff; }
+.infrared-endpoints { display: flex; justify-content: space-between; color: var(--muted); margin-top: 5px; font-size: 12px; }
+.infrared-selection { display: grid; gap: 6px; max-width: 480px; }
+.infrared-selection output { color: var(--accent); font-variant-numeric: tabular-nums; }
+.infrared-selection input { width: 100%; padding: 0; accent-color: var(--accent); }
 .sky-map > p { padding-inline: 18px; color: var(--muted); margin: 0 0 14px; }
 .aladin-map { position: relative; width: 100%; height: clamp(280px, 50vh, 520px); background: #060a12; }
 .sky-map-actions { display: none; }
