@@ -6,7 +6,6 @@
       "dec": 4.768,
       "frames": [],
       "imageDirectory": "/data/barnards-star/spherex-images/",
-      "graphs": "/data/barnards-star/cube.json",
       "cube": "/data/barnards-star/cube.json",
       "spectrum": "/data/barnards-star/dr1-spectrum.json",
       "fields": [
@@ -19,32 +18,28 @@
       "ra": 133.760,
       "dec": -7.242,
       "frames": [],
-      "imageDirectory": "/data/wise-0855/",
-      "graphs": "/data/wise-0855/pixel-graphs.json"
+      "imageDirectory": "/data/wise-0855/"
     },
     {
       "target": "RW Aurigae",
       "ra": 76.956525,
       "dec": 30.4014380556,
       "frames": [],
-      "imageDirectory": "/data/rw-aurigae/",
-      "graphs": "/data/rw-aurigae/pixel-graphs.json"
+      "imageDirectory": "/data/rw-aurigae/"
     },
     {
       "target": "Epsilon Indi B",
       "ra": 331.095,
       "dec": -56.806,
       "frames": [],
-      "imageDirectory": "/data/epsilon-indi-b/",
-      "graphs": "/data/epsilon-indi-b/pixel-graphs.json"
+      "imageDirectory": "/data/epsilon-indi-b/"
     },
     {
       "target": "R Draconis",
       "ra": 248.167611,
       "dec": 66.754979,
       "frames": [],
-      "imageDirectory": "/data/r-draconis/",
-      "graphs": "/data/r-draconis/pixel-graphs.json"
+      "imageDirectory": "/data/r-draconis/"
     }
   ]
 }
