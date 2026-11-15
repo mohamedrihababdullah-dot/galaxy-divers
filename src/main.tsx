@@ -6,7 +6,6 @@ import { Help } from './Help'
 import './style.css'
 import { ObservationStudio, Studio } from './Studio'
 import { SkyMap } from './SkyMap'
-import { InfraredBandLegend } from './InfraredBandLegend'
 import { SkyGuide } from './SkyGuide'
 import { GaiaComparison } from './TelescopeComparison'
 import { SpherexImageSequence } from './SpherexImageSequence'
@@ -325,7 +324,6 @@ function App() {
           </>}
         </section>
       </div>
-      <InfraredBandLegend />
       <SkyMap coords={(demoTarget ? demoPreset : position) ?? demoPreset} searchVersion={viewKey} onSearch={coords => select(coords)} />
       </section>
       <section className="mission-notes" aria-label="About the project">
